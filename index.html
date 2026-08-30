@@ -1590,6 +1590,27 @@
             border: 1px solid rgba(255,215,0,0.45);
             box-shadow: 0 0 10px rgba(255,215,0,0.15);
         }
+        .lb-entry.lb-header {
+            margin: 0 0 6px;
+            padding: 4px 8px 6px;
+            background: transparent;
+            border-bottom: 1px solid rgba(255,255,255,0.10);
+            border-radius: 0;
+            color: rgba(232,240,255,0.5);
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .lb-entry.lb-header .lb-rank,
+        .lb-entry.lb-header .lb-score { color: rgba(232,240,255,0.5); }
+        .lb-entry.lb-header .lb-name { color: rgba(232,240,255,0.5); }
+        .lb-you {
+            color: var(--ui-gold, #ffd166);
+            font-size: 9px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
         .lb-rank { min-width: 28px; color: #888; font-weight: 700; }
         .lb-entry:nth-child(1) .lb-rank { color: #ffd700; }
         .lb-entry:nth-child(2) .lb-rank { color: #c0c0c0; }
@@ -1831,7 +1852,7 @@
                 <div class="stats-board" style="align-items: center; justify-content: center; width: 100%;">
                     <section class="mode-stat-card mode-stat-card--classic" style="width: 100%; max-width: 320px;">
                         <div class="mode-stat-header" id="leaderboardModeLabel"></div>
-                        <div class="leaderboard-section" tabindex="0">
+                        <div class="leaderboard-section" tabindex="0" aria-label="Leaderboard">
                             <div id="lbClassicMain"></div>
                         </div>
                     </section>
@@ -2171,28 +2192,43 @@ async function fetchLeaderboard(mode, limit = 10) {
 function renderLeaderboard(containerId, entries) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    const playerName = (localStorage.getItem('playerName') || '').toLowerCase();
+
+    // Keep the direction of the leaderboard independent from the page direction
+    // so rank/score remain visually stable in both Persian and English.
+    container.dir = currentLang === 'fa' ? 'rtl' : 'ltr';
+
     if (!entries || entries.length === 0) {
-        container.innerHTML = `<div class="lb-empty">${currentLang === 'fa' ? 'هنوز امتیازی ثبت نشده' : 'No scores yet'}</div>`;
+        container.innerHTML = `<div class="lb-empty">${t('leaderboardEmpty')}</div>`;
         return;
     }
-    container.innerHTML = entries.map((entry, i) => {
+
+    const playerName = (playerData?.username || localStorage.getItem('playerName') || '').trim().toLowerCase();
+    const header = `
+        <div class="lb-entry lb-header" aria-hidden="true">
+            <span class="lb-rank">${t('leaderboardRank')}</span>
+            <span class="lb-name">${t('leaderboardPlayer')}</span>
+            <span class="lb-score">${t('leaderboardScore')}</span>
+        </div>`;
+
+    const rows = entries.map((entry, i) => {
         const name = String(entry.name || 'Player');
         const safeName = name.replace(/[&<>"']/g, (char) => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[char]));
-        const score = Number.isFinite(Number(entry.score)) ? Number(entry.score) : 0;
-        const isMine = playerName && name.toLowerCase() === playerName;
-        const rankDisplay = `#${i + 1}`;
+        const numericScore = Number(entry.score);
+        const score = Number.isFinite(numericScore) ? numericScore : 0;
+        const isMine = playerName && name.trim().toLowerCase() === playerName;
         return `
             <div class="lb-entry ${isMine ? 'lb-mine' : ''}">
-                <span class="lb-rank">${rankDisplay}</span>
-                <span class="lb-name">${safeName}</span>
+                <span class="lb-rank">#${i + 1}</span>
+                <span class="lb-name">${safeName}${isMine ? ` <span class="lb-you">(${currentLang === 'fa' ? 'شما' : 'You'})</span>` : ''}</span>
                 <span class="lb-score">${score}</span>
-            </div>
-        `;
+            </div>`;
     }).join('');
+
+    container.innerHTML = header + rows;
 }
+
 
 // ====== Username Logic (Lobby) ======
 const lobbyUsernameInput = document.getElementById('lobbyUsernameInput');
@@ -2928,6 +2964,7 @@ const LANG = {
         firstNameTitle: 'نام بازیکن خود را انتخاب کنید', firstNameDescription: 'این نام در لیدربورد نمایش داده می‌شود.',
         firstNamePlaceholder: 'نام بازیکن', firstNameSave: 'ثبت نام', firstNameSkip: 'رد کردن',
         firstNameErrorEmpty: 'لطفاً یک نام وارد کنید.', firstNameErrorNetwork: 'ثبت نام انجام نشد. دوباره تلاش کنید.',
+        leaderboardTitle: 'لیدربورد', leaderboardModeLabel: 'حالت کلاسیک', leaderboardRank: 'رتبه', leaderboardPlayer: 'بازیکن', leaderboardScore: 'امتیاز', leaderboardEmpty: 'هنوز امتیازی ثبت نشده', leaderboardLoading: 'در حال دریافت رتبه‌ها...', leaderboardError: 'دریافت لیدربورد انجام نشد.', btnBackLeaderboard: 'بازگشت',
         qualityAuto: 'خودکار', qualityMedium: 'متوسط', qualityLow: 'پایین',
     },
     en: {
@@ -2950,6 +2987,7 @@ const LANG = {
         firstNameTitle: 'Choose your player name', firstNameDescription: 'This name appears on the leaderboard.',
         firstNamePlaceholder: 'Player name', firstNameSave: 'Save', firstNameSkip: 'Skip',
         firstNameErrorEmpty: 'Enter a player name.', firstNameErrorNetwork: 'Could not save your name. Try again.',
+        leaderboardTitle: 'Leaderboard', leaderboardModeLabel: 'Classic Mode', leaderboardRank: 'Rank', leaderboardPlayer: 'Player', leaderboardScore: 'Score', leaderboardEmpty: 'No scores yet', leaderboardLoading: 'Loading leaderboard...', leaderboardError: 'Could not load leaderboard.', btnBackLeaderboard: 'Back',
         qualityAuto: 'Auto', qualityMedium: 'Medium', qualityLow: 'Low',
     }
 };
@@ -3042,6 +3080,9 @@ function updateUI() {
     document.getElementById('restartLabel').textContent = t('restartLabel');
     document.getElementById('lobbyLabel2').textContent = t('lobbyLabel2');
     document.getElementById('gameOverCupsLabel').textContent = t('cupsLabel');
+    document.getElementById('leaderboardTitleLabel').textContent = t('leaderboardTitle');
+    document.getElementById('leaderboardModeLabel').textContent = t('leaderboardModeLabel');
+    document.getElementById('btnBackLeaderboardLabel').textContent = t('btnBackLeaderboard');
     fuelWarning.textContent = t('fuelWarning');
     updateQualitySelectLabels();
     syncCustomSelect(langSelectContainer, currentLang);
@@ -3071,7 +3112,8 @@ btnLobbyPause.addEventListener('click', backToLobby);
 btnLobbyOver.addEventListener('click', backToLobby);
 btnLeaderboardLobby.addEventListener('click', async () => {
     showScene('LEADERBOARD');
-    renderLeaderboard('lbClassicMain', await fetchLeaderboard('classic', 10));
+    const classicEntries = await fetchLeaderboard('classic', 10);
+    renderLeaderboard('lbClassicMain', classicEntries);
 });
 btnBackLeaderboard.addEventListener('click', () => showScene('LOBBY'));
 btnSettingsLobby.addEventListener('click', () => { previousScene = scene; showScene('SETTINGS'); });
