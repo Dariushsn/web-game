@@ -1,0 +1,3210 @@
+<!--v1.8
+    SHOW_LOBBY_ICONS + Centered Username + LB UI Update + Bilingual LB + Toast Notifications-->
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <link rel="icon" href="images/cover.png" type="image/png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2 Cars Game</title>
+    <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            color: #fff;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            height: 100vh;
+            height: 100dvh;
+            max-height: 850px;
+            background: #12122a;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* Initial player-data loading screen */
+        #bootLoader {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(0,217,255,0.16), transparent 34%),
+                linear-gradient(145deg, #050817, #0d1940 58%, #090e26);
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 260ms ease, visibility 260ms ease;
+        }
+        #bootLoader.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        #bootLoader::before {
+            content: "";
+            position: absolute;
+            inset: -30%;
+            background: repeating-linear-gradient(110deg, transparent 0 42px, rgba(113,196,255,0.06) 43px 44px, transparent 45px 86px);
+            animation: loader-drift 4.5s linear infinite;
+        }
+        .loader-card { position: relative; display: grid; justify-items: center; gap: 16px; color: #f9fcff; text-align: center; }
+        .loader-mark {
+            inline-size: 74px;
+            block-size: 74px;
+            padding: 8px;
+            border: 1px solid rgba(0,217,255,0.58);
+            border-radius: 22px;
+            background: rgba(8,20,55,0.62);
+            box-shadow: 0 0 0 10px rgba(0,217,255,0.04), 0 0 34px rgba(0,217,255,0.28);
+            animation: loader-pulse 1.5s ease-in-out infinite;
+        }
+        .loader-mark img { inline-size: 100%; block-size: 100%; object-fit: cover; border-radius: 15px; }
+        .loader-bars { display: flex; gap: 6px; }
+        .loader-bars span { inline-size: 34px; block-size: 3px; border-radius: 999px; background: var(--ui-cyan, #00d9ff); animation: loader-bar 1s ease-in-out infinite; }
+        .loader-bars span:nth-child(2) { background: var(--ui-violet, #c77dff); animation-delay: 120ms; }
+        .loader-bars span:nth-child(3) { background: var(--ui-danger, #ff5a78); animation-delay: 240ms; }
+        #bootLoaderLabel { color: rgba(235,245,255,0.78); font-size: 13px; font-weight: 700; letter-spacing: 0.035em; }
+        @keyframes loader-drift { to { transform: translateX(36px); } }
+        @keyframes loader-pulse { 50% { transform: scale(1.05); box-shadow: 0 0 0 14px rgba(0,217,255,0.025), 0 0 44px rgba(0,217,255,0.42); } }
+        @keyframes loader-bar { 50% { transform: scaleX(0.46); opacity: 0.42; } }
+
+        /* First-visit name selection, with the lobby visible behind it. */
+        #firstNameModal {
+            z-index: 80;
+            background: rgba(4, 9, 27, 0.46);
+            backdrop-filter: blur(5px);
+        }
+        .first-name-card {
+            inline-size: min(100%, 330px);
+            display: grid;
+            justify-items: center;
+            gap: 13px;
+            padding: 26px 22px 22px;
+            border: 1px solid rgba(0,217,255,0.44);
+            border-radius: 22px;
+            background: linear-gradient(145deg, rgba(16,35,75,0.94), rgba(9,15,43,0.95));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 22px 58px rgba(0,0,0,0.42), 0 0 32px rgba(0,217,255,0.16);
+            text-align: center;
+            animation: panel-enter 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+        .first-name-mark {
+            inline-size: 52px;
+            block-size: 52px;
+            display: grid;
+            place-items: center;
+            padding: 11px;
+            border: 1px solid rgba(0,217,255,0.38);
+            border-radius: 16px;
+            background: rgba(0,217,255,0.09);
+            box-shadow: 0 0 20px rgba(0,217,255,0.16);
+        }
+        .first-name-mark img { inline-size: 100%; block-size: 100%; object-fit: contain; }
+        .first-name-card h2 { margin: 0; color: #f8fcff; font-size: 23px; line-height: 1.15; }
+        .first-name-card p { margin: -4px 0 2px; color: rgba(220,234,255,0.72); font-size: 13px; line-height: 1.55; }
+        .first-name-card input {
+            inline-size: 100%;
+            min-block-size: 46px;
+            padding: 10px 14px;
+            border: 1px solid rgba(0,217,255,0.38);
+            border-radius: 13px;
+            outline: none;
+            background: rgba(2,9,28,0.58);
+            color: #fff;
+            font: 800 15px/1.2 inherit;
+            text-align: center;
+        }
+        .first-name-card input:focus { border-color: var(--ui-cyan, #00d9ff); box-shadow: 0 0 0 3px rgba(0,217,255,0.16); }
+        .first-name-card input::placeholder { color: rgba(220,234,255,0.4); font-weight: 500; }
+        .first-name-error { min-block-size: 15px; color: #ff9aae; font-size: 11px; }
+        .first-name-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; inline-size: 100%; }
+        .first-name-actions .menu-btn { inline-size: 100%; margin: 0; padding: 10px 12px; font-size: 13px; }
+
+        .app-loader {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle at 50% 42%, rgba(0,217,255,0.16), transparent 30%),
+                linear-gradient(145deg, #050817, #0b1534);
+            transition: opacity 0.28s ease, visibility 0.28s ease;
+        }
+        .app-loader.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .app-loader__content { display: grid; justify-items: center; gap: 16px; color: #dce9ff; }
+        .app-loader__mark {
+            width: 72px;
+            height: 72px;
+            border-radius: 22px;
+            border: 1px solid rgba(0,217,255,0.52);
+            box-shadow: 0 0 28px rgba(0,217,255,0.2);
+        }
+        .app-loader__orbit {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(0,217,255,0.2);
+            border-top-color: #00d9ff;
+            border-right-color: #c77dff;
+            border-radius: 50%;
+            animation: loader-spin 0.75s linear infinite;
+        }
+        .app-loader__label { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
+        @keyframes loader-spin { to { transform: rotate(360deg); } }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            text-align: center;
+            padding: 20px;
+            background: rgba(10,10,26,0.92);
+            backdrop-filter: blur(6px);
+        }
+        .overlay.active { display: flex; }
+
+        #lobbyScreen {
+            background: linear-gradient(180deg, #0f0f23 0%, #1a1a3e 100%);
+            backdrop-filter: none;
+        }
+        #lobbyScreen h1 { font-size: 48px; color: #e94560; text-shadow: 0 0 25px rgba(233,69,96,0.4); margin-bottom: 4px; }
+        .subtitle { color: #8892b0; font-size: 14px; margin-bottom: 24px; }
+        .menu-btn {
+            width: 220px;
+            padding: 13px;
+            margin: 5px 0;
+            font-size: 16px;
+            border: 2px solid;
+            border-radius: 50px;
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: inherit;
+            font-weight: 600;
+        }
+        .menu-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .btn-play { border-color: #2ed573; color: #2ed573; }
+        .btn-play:hover { background: #2ed573; color: #0a0a1a; }
+        .btn-settings { border-color: #00d9ff; color: #00d9ff; }
+        .btn-settings:hover { background: #00d9ff; color: #0a0a1a; }
+        .btn-stats { border-color: #9b59b6; color: #9b59b6; }
+        .btn-stats:hover { background: #9b59b6; color: #fff; }
+        .btn-lobby { border-color: #ffd700; color: #ffd700; }
+        .btn-lobby:hover { background: #ffd700; color: #0a0a1a; }
+        .btn-resume { border-color: #e94560; color: #e94560; }
+        .btn-resume:hover { background: #e94560; color: #fff; }
+        .btn-back { border-color: #888; color: #888; }
+        .btn-back:hover { background: #888; color: #fff; }
+        .btn-danger { border-color: #ff4757; color: #ff4757; }
+        .btn-danger:hover { background: #ff4757; color: #fff; }
+
+        /* Username Box Styles (Centered & Smaller) */
+        .username-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(0,217,255,0.2);
+            border-radius: 10px;
+            margin: 0 auto 12px; /* Centered horizontally */
+            width: 100%;
+            max-width: 180px;
+        }
+        .username-box img { width: 14px; height: 14px; object-fit: contain; opacity: 0.8; }
+        .username-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            outline: none;
+            width: 100%;
+            text-align: center; /* Center text inside input */
+        }
+        .username-input::placeholder { color: rgba(255,255,255,0.4); font-size: 11px; }
+        .username-input:disabled { color: rgba(255,255,255,0.5); cursor: not-allowed; }
+
+        /* Lobby Bottom Row */
+        .lobby-bottom-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .lb-btn-square {
+            width: 48px;
+            height: 48px;
+            border: 1px solid rgba(0,217,255,0.45);
+            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(0,217,255,0.2), rgba(255,255,255,0.05));
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+        .lb-btn-square:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,217,255,0.25); }
+        .lb-btn-square img { width: 26px; height: 26px; object-fit: contain; }
+
+        .highscore-box {
+            padding: 8px 20px;
+            background: rgba(255,215,0,0.08);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 10px;
+            color: #ffd700;
+            font-size: 16px;
+        }
+
+        #pauseMenu h2 { font-size: 32px; margin-bottom: 18px; color: #fff; }
+        #gameOver h1 { color: #e94560; font-size: 40px; margin-bottom: 6px; }
+        .score-label { color: #ccc; font-size: 16px; margin: 3px 0; }
+        .score-value { color: #ffd700; font-size: 22px; font-weight: bold; }
+        .new-record { color: #2ed573; font-size: 17px; font-weight: bold; margin: 6px 0; display: none; text-shadow: 0 0 10px rgba(46,213,115,0.3); }
+
+        #score {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 0 0 12px rgba(255,255,255,0.2);
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+        }
+
+        #fuelBar {
+            position: absolute;
+            top: 56px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110px;
+            height: 8px;
+            background: rgba(255,0,0,0.2);
+            border-radius: 6px;
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #fuelFill { width: 100%; height: 100%; background: #ffd700; border-radius: 6px; transition: width 0.2s; }
+
+        #modeSelect {
+            justify-content: center;
+            overflow: hidden;
+            touch-action: manipulation;
+            padding: clamp(8px, 2dvh, 16px) 14px;
+            background:
+                radial-gradient(circle at 15% 12%, rgba(0,217,255,0.16), transparent 34%),
+                radial-gradient(circle at 88% 82%, rgba(233,69,96,0.16), transparent 42%),
+                linear-gradient(145deg, #070b1e 0%, #121a3d 52%, #0c1028 100%);
+            isolation: isolate;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,217,255,0.45) transparent;
+        }
+        #modeSelect::before,
+        #modeSelect::after {
+            content: "";
+            position: absolute;
+            pointer-events: none;
+            z-index: 0;
+        }
+        #modeSelect::before {
+            inset: -22% -55%;
+            background: repeating-linear-gradient(110deg, transparent 0 32px, rgba(130,188,255,0.045) 33px 34px, transparent 35px 68px);
+            transform: rotate(-7deg);
+        }
+        #modeSelect::after {
+            width: 240px;
+            height: 240px;
+            inset: auto -105px -105px auto;
+            border: 1px solid rgba(0,217,255,0.25);
+            border-radius: 50%;
+            box-shadow: 0 0 0 34px rgba(0,217,255,0.035), 0 0 0 68px rgba(0,217,255,0.025);
+        }
+        .mode-select-shell {
+            position: relative;
+            z-index: 1;
+            width: min(100%, 390px);
+            height: 100%;
+            max-height: 620px;
+            display: flex;
+            flex-direction: column;
+            margin: auto;
+            padding: 0;
+            animation: mode-select-enter 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+        .mode-select-heading { margin-bottom: 10px; text-align: center; }
+        .mode-select-lights {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .mode-select-lights span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #00d9ff;
+            box-shadow: 0 0 12px rgba(0,217,255,0.9);
+        }
+        .mode-select-lights span:nth-child(2) { background: #c77dff; box-shadow: 0 0 12px rgba(199,125,255,0.8); }
+        .mode-select-lights span:nth-child(3) { background: #e94560; box-shadow: 0 0 12px rgba(233,69,96,0.8); }
+        #modeSelect h2 {
+            font-size: clamp(24px, 5.6vw, 32px);
+            letter-spacing: 0.02em;
+            color: #f7fbff;
+            text-shadow: 0 4px 24px rgba(0,217,255,0.26);
+        }
+        .mode-list { display: grid; gap: 10px; }
+        .mode-card {
+            --accent: #00d9ff;
+            --accent-rgb: 0,217,255;
+            position: relative;
+            width: 100%;
+            min-height: 124px;
+            display: grid;
+            grid-template-columns: 62px minmax(0, 1fr) 26px;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            overflow: hidden;
+            appearance: none;
+            border: 1px solid rgba(var(--accent-rgb),0.32);
+            border-radius: 18px;
+            background: linear-gradient(120deg, rgba(255,255,255,0.105), rgba(255,255,255,0.035) 45%, rgba(var(--accent-rgb),0.1));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.11), 0 12px 28px rgba(0,0,0,0.18);
+            color: #fff;
+            cursor: pointer;
+            font: inherit;
+            text-align: start;
+            transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease, background 0.24s ease;
+        }
+        .mode-card--custom { --accent: #c77dff; --accent-rgb: 199,125,255; }
+        .mode-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(105deg, transparent 22%, rgba(var(--accent-rgb),0.18) 48%, transparent 72%);
+            transform: translateX(-115%);
+            transition: transform 0.58s ease;
+            pointer-events: none;
+        }
+        .mode-card::after {
+            content: "";
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            inset: -102px -74px auto auto;
+            border: 1px solid rgba(var(--accent-rgb),0.28);
+            border-radius: 50%;
+            box-shadow: 0 0 0 20px rgba(var(--accent-rgb),0.04), 0 0 0 42px rgba(var(--accent-rgb),0.025);
+            pointer-events: none;
+        }
+        .mode-card:hover,
+        .mode-card--custom[aria-expanded="true"] {
+            border-color: rgba(var(--accent-rgb),0.8);
+            background: linear-gradient(120deg, rgba(255,255,255,0.14), rgba(var(--accent-rgb),0.1) 62%, rgba(var(--accent-rgb),0.18));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 34px rgba(var(--accent-rgb),0.16), 0 12px 28px rgba(0,0,0,0.24);
+            transform: translateY(-4px);
+        }
+        .mode-card:hover::before,
+        .mode-card--custom[aria-expanded="true"]::before { transform: translateX(115%); }
+        .mode-card:active { transform: translateY(-1px) scale(0.992); }
+        .mode-card:focus-visible {
+            outline: 3px solid rgba(var(--accent-rgb),0.8);
+            outline-offset: 3px;
+        }
+        .mode-card__icon,
+        .mode-card__body,
+        .mode-card__arrow { position: relative; z-index: 1; }
+        .mode-card__icon {
+            width: 62px;
+            height: 62px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(var(--accent-rgb),0.46);
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(var(--accent-rgb),0.28), rgba(255,255,255,0.06));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 20px rgba(var(--accent-rgb),0.16);
+            font-size: 30px;
+        }
+        .mode-card__body { min-width: 0; }
+        .mode-card__title {
+            display: block;
+            margin-bottom: 5px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+        }
+        .mode-card__description {
+            display: block;
+            color: rgba(232,240,255,0.72);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        #modeSelect .mode-stats {
+            display: flex;
+            align-items: center;
+            margin-top: 9px;
+            color: rgba(255,255,255,0.58);
+            font-size: 11px;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .mode-card__arrow {
+            color: var(--accent);
+            font-size: 27px;
+            font-weight: 300;
+            line-height: 1;
+            text-shadow: 0 0 14px rgba(var(--accent-rgb),0.65);
+            transition: transform 0.24s ease;
+        }
+        .mode-card:hover .mode-card__arrow,
+        .mode-card--custom[aria-expanded="true"] .mode-card__arrow { transform: translateX(4px); }
+
+        .mode-select-main {
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: opacity 0.2s ease, transform 0.24s ease, visibility 0s linear 0.24s;
+        }
+        #modeSelect.custom-open .mode-select-main {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateX(-18px);
+        }
+        #customSettings {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin: 0;
+            overflow: hidden;
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(7,11,30,0.98), rgba(20,17,48,0.96));
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateX(24px);
+            transition: opacity 0.22s ease, transform 0.28s ease, visibility 0s linear 0.28s;
+        }
+        #customSettings.active {
+            margin: 0;
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateX(0);
+            transition: opacity 0.22s ease, transform 0.28s ease;
+        }
+        .custom-settings-panel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 14px;
+            border: 1px solid rgba(199,125,255,0.32);
+            border-radius: 18px;
+            background: linear-gradient(145deg, rgba(199,125,255,0.14), rgba(255,255,255,0.05));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.11), 0 12px 28px rgba(0,0,0,0.16);
+        }
+        .custom-close {
+            align-self: flex-start;
+            margin: 0 0 9px;
+            padding: 6px 10px;
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 9px;
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.88);
+            cursor: pointer;
+            font: inherit;
+            font-size: 12px;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .custom-close:hover { border-color: rgba(199,125,255,0.7); background: rgba(199,125,255,0.16); transform: translateX(-2px); }
+        .custom-close:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
+        #modeSelect .setting-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            margin: 4px 0;
+            background: rgba(5,9,28,0.34);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 11px;
+            color: rgba(255,255,255,0.9);
+            font-size: 13px;
+        }
+        #modeSelect .setting-row input[type="number"] {
+            width: 64px;
+            padding: 6px;
+            border: 1px solid rgba(199,125,255,0.45);
+            border-radius: 8px;
+            background: rgba(7,11,31,0.82);
+            color: #fff;
+            font: inherit;
+            text-align: center;
+        }
+        #modeSelect .setting-row input[type="number"]:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
+        #modeSelect .setting-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+        #modeSelect .setting-row input[type="checkbox"] { accent-color: #2ed573; width: 18px; height: 18px; cursor: pointer; }
+        #modeSelect .setting-row input[type="radio"] { accent-color: #c77dff; width: 16px; height: 16px; cursor: pointer; }
+        #modeSelect .btn-start-custom { width: 100%; margin-top: 8px; border-color: #2ed573; background: rgba(46,213,115,0.08); }
+        #modeSelect .btn-start-custom:hover { box-shadow: 0 10px 24px rgba(46,213,115,0.22); }
+        #modeSelect #btnBackLobby { min-width: 168px; margin-top: 14px; background: rgba(255,255,255,0.03); }
+
+        @keyframes mode-select-enter {
+            from { opacity: 0; transform: translateY(14px) scale(0.985); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .mode-select-shell,
+            .mode-card,
+            .mode-card::before,
+            .mode-card__arrow,
+            #customSettings { animation: none; transition: none; }
+        }
+        #settingsScreen h2 { font-size: 30px; color: #00d9ff; margin-bottom: 16px; }
+        .settings-group { width: 270px; }
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            margin: 4px 0;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .setting-item select { background: #1a1a3e; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 4px 10px; font-size: 14px; cursor: pointer; }
+
+        /* Stats – redesigned */
+        #statsScreen {
+            background: rgba(10,10,26,0.96);
+            backdrop-filter: blur(8px);
+        }
+        #statsScreen h2 { font-size: 30px; color: #9b59b6; margin-bottom: 16px; }
+        .stats-board {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            inline-size: min(100%, 280px);
+            margin: 6px auto;
+            justify-self: center;
+            align-self: center;
+        }
+        #statsScreen .scene-panel { justify-items: center; }
+        #statsScreen .stats-board { justify-self: center; }
+        .mode-stat-card {
+            display: grid;
+            gap: 6px;
+            padding: 10px 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            background: rgba(4,8,28,0.32);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+            inline-size: 100%;
+        }
+        .mode-stat-card--classic { border-color: rgba(0,217,255,0.25); }
+        .mode-stat-card--custom { border-color: rgba(199,125,255,0.25); }
+        .mode-stat-header {
+            color: var(--ui-cyan, #00d9ff);
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            text-align: center;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .mode-stat-card--custom .mode-stat-header { color: var(--ui-violet, #c77dff); }
+        .metric {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            text-align: start;
+        }
+        .metric:last-child { border-bottom: 0; }
+        .metric span { color: rgba(232,240,255,0.6); font-size: 11px; }
+        .metric strong { color: var(--ui-ink, #f7fbff); font-size: 19px; font-variant-numeric: tabular-nums; }
+        .mode-stat-card--classic .metric strong { color: var(--ui-cyan, #00d9ff); }
+        .mode-stat-card--custom .metric strong { color: var(--ui-violet, #c77dff); }
+
+        .cups-panel {
+            display: grid;
+            gap: 7px;
+            padding: 10px;
+            border: 1px solid rgba(255,209,102,0.2);
+            border-radius: 15px;
+            background: rgba(255,209,102,0.055);
+            inline-size: 100%;
+        }
+        .cups-panel > #cupsLabel { color: var(--ui-gold, #ffd166); font-size: 12px; font-weight: 800; }
+        .cups-display { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 0; font-size: 29px; }
+        .cup-item { min-inline-size: 38px; opacity: 0.26; transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease; }
+        .cup-item.earned { opacity: 1; filter: drop-shadow(0 0 9px rgba(255,209,102,0.38)); transform: translateY(-2px) scale(1.06); }
+        .cup-label { color: rgba(232,240,255,0.5); font-size: 9px; }
+
+        #fuelWarning {
+            position: absolute;
+            top: 72px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff4757;
+            font-size: 13px;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+            text-shadow: 0 0 20px rgba(255,0,0,0.6);
+        }
+
+        .mode-stats { font-variant-numeric: tabular-nums; }
+
+        @media (max-width: 400px) {
+            .menu-btn { width: 180px; padding: 11px; font-size: 14px; }
+            #modeSelect { padding: 10px 12px; }
+            .mode-card { min-height: 92px; grid-template-columns: 48px minmax(0, 1fr) 22px; gap: 10px; padding: 10px; }
+            .mode-card__icon { width: 48px; height: 48px; border-radius: 14px; font-size: 24px; }
+            .mode-card__title { font-size: 16px; }
+            .mode-card__description { font-size: 11px; }
+            #modeSelect .mode-stats { margin-top: 6px; font-size: 10px; }
+            #modeSelect .setting-row { gap: 7px; padding: 8px; font-size: 12px; }
+            #modeSelect .setting-row label { gap: 3px; font-size: 11px; }
+            .stats-board { width: 220px; }
+            .metric strong { font-size: 17px; }
+            .cups-display { font-size: 26px; gap: 8px; }
+            #lobbyScreen h1 { font-size: 38px; }
+            #modeSelect h2 { font-size: 26px; }
+        }
+        @media (max-height: 700px) {
+            #modeSelect { padding-block: 6px; }
+            .mode-select-lights { display: none; }
+            .mode-select-heading { margin-bottom: 7px; }
+            #modeSelect h2 { font-size: 23px; }
+            .mode-list { gap: 8px; }
+            .mode-card { min-height: 84px; grid-template-columns: 46px minmax(0, 1fr) 20px; gap: 9px; padding: 9px; }
+            .mode-card__icon { width: 46px; height: 46px; border-radius: 13px; font-size: 23px; }
+            .mode-card__title { margin-bottom: 2px; font-size: 15px; }
+            .mode-card__description { font-size: 10px; }
+            #modeSelect .mode-stats { margin-top: 3px; font-size: 9px; }
+            .custom-settings-panel { padding: 10px; }
+            .custom-close { margin-bottom: 6px; padding: 5px 8px; }
+            #modeSelect .setting-row { padding: 6px 8px; margin: 3px 0; font-size: 11px; }
+            #modeSelect .setting-row label { font-size: 10px; }
+            #modeSelect .btn-start-custom,
+            #modeSelect #btnBackLobby { padding: 8px 12px; }
+        }
+        @media (max-height: 520px) {
+            #modeSelect h2 { font-size: 21px; }
+            .mode-card { min-height: 70px; padding: 7px 8px; }
+            .mode-card__description,
+            #modeSelect .mode-stats { display: none; }
+            .custom-settings-panel { padding: 7px; }
+            #modeSelect .setting-row { padding: 5px 7px; margin: 2px 0; }
+        }
+        #settingsScreen h2 { font-size: 30px; color: #00d9ff; margin-bottom: 16px; }
+        /* ========== UNIFIED PREMIUM GAME UI ========== */
+        :root {
+            --ui-bg-0: #070b1e;
+            --ui-bg-1: #121a3d;
+            --ui-ink: #f7fbff;
+            --ui-muted: rgba(232,240,255,0.68);
+            --ui-glass: rgba(255,255,255,0.07);
+            --ui-stroke: rgba(255,255,255,0.12);
+            --ui-cyan: #00d9ff;
+            --ui-violet: #c77dff;
+            --ui-lime: #2ed573;
+            --ui-gold: #ffd166;
+            --ui-danger: #ff5a78;
+            --ui-radius: 22px;
+        }
+        html,
+        body {
+            block-size: 100%;
+            min-block-size: 100dvh;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        body {
+            background:
+                radial-gradient(circle at 15% 8%, rgba(0,217,255,0.15), transparent 28%),
+                radial-gradient(circle at 86% 86%, rgba(199,125,255,0.14), transparent 32%),
+                #050817;
+            font-family: Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+        [lang="fa"] body { font-family: Vazirmatn, Tahoma, "Segoe UI", sans-serif; }
+        #gameContainer {
+            inline-size: min(100vw, 500px);
+            block-size: 100dvh;
+            max-block-size: 850px;
+            background: #070b1e;
+            border: 1px solid rgba(130,188,255,0.14);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 50px rgba(0,217,255,0.08);
+        }
+        canvas { position: relative; z-index: 0; touch-action: none; }
+
+        .overlay {
+            display: none;
+            grid-template-columns: minmax(0, 1fr);
+            place-items: center;
+            overflow: hidden;
+            padding: clamp(12px, 3dvh, 28px) clamp(12px, 4vw, 24px);
+            background:
+                radial-gradient(circle at 12% 12%, rgba(0,217,255,0.14), transparent 34%),
+                radial-gradient(circle at 88% 84%, rgba(199,125,255,0.14), transparent 40%),
+                linear-gradient(145deg, rgba(7,11,30,0.97), rgba(15,22,53,0.96));
+            backdrop-filter: blur(12px);
+            isolation: isolate;
+        }
+        .overlay.active { display: grid; }
+        .overlay::before,
+        .overlay::after {
+            content: "";
+            position: absolute;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .overlay::before {
+            inset: -20% -48%;
+            background: repeating-linear-gradient(110deg, transparent 0 36px, rgba(151,202,255,0.04) 37px 38px, transparent 39px 74px);
+            transform: rotate(-7deg);
+        }
+        .overlay::after {
+            inline-size: 210px;
+            block-size: 210px;
+            inset: auto -92px -96px auto;
+            border: 1px solid rgba(0,217,255,0.22);
+            border-radius: 50%;
+            box-shadow: 0 0 0 32px rgba(0,217,255,0.035), 0 0 0 65px rgba(0,217,255,0.02);
+        }
+        .overlay > * { position: relative; z-index: 1; }
+        #modeSelect::before,
+        #modeSelect::after { z-index: 0; }
+
+        .scene-panel {
+            --panel-accent: var(--ui-cyan);
+            --panel-accent-rgb: 0,217,255;
+            position: relative;
+            inline-size: min(100%, 390px);
+            min-inline-size: 0;
+            display: grid;
+            gap: 14px;
+            overflow: hidden;
+            padding: clamp(18px, 3.2dvh, 28px);
+            border: 1px solid rgba(var(--panel-accent-rgb),0.32);
+            border-radius: var(--ui-radius);
+            background: linear-gradient(145deg, rgba(255,255,255,0.105), rgba(255,255,255,0.045) 48%, rgba(var(--panel-accent-rgb),0.09));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 22px 50px rgba(0,0,0,0.35), 0 0 34px rgba(var(--panel-accent-rgb),0.11);
+            animation: panel-enter 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+            text-align: center;
+        }
+        .scene-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(112deg, transparent 22%, rgba(var(--panel-accent-rgb),0.1) 49%, transparent 76%);
+            pointer-events: none;
+        }
+        .scene-panel > * { position: relative; z-index: 1; }
+        .scene-panel--lobby { --panel-accent: var(--ui-cyan); --panel-accent-rgb: 0,217,255; }
+        .scene-panel--stats { --panel-accent: var(--ui-violet); --panel-accent-rgb: 199,125,255; }
+        .scene-panel--settings { --panel-accent: var(--ui-cyan); --panel-accent-rgb: 0,217,255; }
+        .scene-panel--pause { --panel-accent: var(--ui-gold); --panel-accent-rgb: 255,209,102; }
+        .scene-panel--result { --panel-accent: var(--ui-danger); --panel-accent-rgb: 255,90,120; }
+        .scene-title {
+            margin: 0;
+            color: var(--ui-ink);
+            font-size: clamp(28px, 7vw, 40px);
+            font-weight: 900;
+            letter-spacing: 0.015em;
+            line-height: 1.05;
+            text-shadow: 0 5px 26px rgba(var(--panel-accent-rgb),0.32);
+        }
+        #statsScreen .scene-title,
+        #settingsScreen .scene-title,
+        #pauseMenu .scene-title,
+        #gameOver .scene-title,
+        #leaderboardScreen .scene-title {
+            margin: 0;
+            color: var(--ui-ink);
+            font-size: clamp(28px, 7vw, 40px);
+            line-height: 1.05;
+        }
+        .scene-subtitle {
+            margin: -4px 0 4px;
+            color: var(--ui-muted);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        .panel-lights {
+            display: inline-flex;
+            justify-self: center;
+            gap: 6px;
+            margin-bottom: -4px;
+        }
+        .panel-lights span {
+            inline-size: 6px;
+            block-size: 6px;
+            border-radius: 50%;
+            background: var(--ui-cyan);
+            box-shadow: 0 0 12px rgba(0,217,255,0.95);
+        }
+        .panel-lights span:nth-child(2) { background: var(--ui-violet); box-shadow: 0 0 12px rgba(199,125,255,0.85); }
+        .panel-lights span:nth-child(3) { background: var(--ui-danger); box-shadow: 0 0 12px rgba(255,90,120,0.85); }
+
+        .menu-stack,
+        .screen-actions {
+            display: grid;
+            gap: 9px;
+        }
+        .menu-btn {
+            --button: var(--ui-cyan);
+            --button-rgb: 0,217,255;
+            inline-size: 100%;
+            min-block-size: 48px;
+            margin: 0;
+            padding: 11px 15px;
+            border: 1px solid rgba(var(--button-rgb),0.58);
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(var(--button-rgb),0.13), rgba(255,255,255,0.045));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
+            color: var(--button);
+            font: 800 14px/1.2 inherit;
+            letter-spacing: 0.02em;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .menu-btn:hover {
+            border-color: var(--button);
+            background: linear-gradient(135deg, rgba(var(--button-rgb),0.25), rgba(var(--button-rgb),0.08));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 24px rgba(var(--button-rgb),0.18);
+            transform: translateY(-2px);
+        }
+        .menu-btn:active { transform: translateY(0) scale(0.985); }
+        .menu-btn:focus-visible,
+        .setting-item select:focus-visible { outline: 3px solid rgba(var(--button-rgb),0.78); outline-offset: 3px; }
+        .btn-play { --button: var(--ui-lime); --button-rgb: 46,213,115; }
+        .btn-settings { --button: var(--ui-cyan); --button-rgb: 0,217,255; }
+        .btn-stats { --button: var(--ui-violet); --button-rgb: 199,125,255; }
+        .btn-lobby { --button: var(--ui-gold); --button-rgb: 255,209,102; }
+        .btn-resume { --button: var(--ui-lime); --button-rgb: 46,213,115; }
+        .btn-back { --button: #b7c4dc; --button-rgb: 183,196,220; }
+        .btn-danger { --button: var(--ui-danger); --button-rgb: 255,90,120; }
+
+        #lobbyScreen { background: radial-gradient(circle at 50% -5%, rgba(0,217,255,0.21), transparent 44%), linear-gradient(145deg, #070b1e, #111d45); }
+        .lobby-mark {
+            inline-size: 58px;
+            block-size: 58px;
+            display: grid;
+            place-items: center;
+            justify-self: center;
+            border: 1px solid rgba(0,217,255,0.45);
+            border-radius: 18px;
+            background: linear-gradient(145deg, rgba(0,217,255,0.25), rgba(255,255,255,0.05));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 10px 25px rgba(0,217,255,0.17);
+            color: var(--ui-cyan);
+            font-size: 30px;
+            font-weight: 900;
+            text-shadow: 0 0 16px rgba(0,217,255,0.65);
+        }
+        #lobbyScreen .scene-title { color: #f9fcff; font-size: clamp(38px, 11vw, 54px); }
+        #lobbyScreen .scene-subtitle { max-inline-size: 270px; justify-self: center; }
+        #lobbyScreen .highscore-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-self: center;
+            inline-size: 100%;
+            min-inline-size: 0;
+            gap: 3px;
+            margin: 0;
+            padding: 9px 14px;
+            border: 1px solid rgba(255,209,102,0.32);
+            border-radius: 12px;
+            background: rgba(255,209,102,0.08);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
+            color: var(--ui-gold);
+            font-size: 13px;
+            font-variant-numeric: tabular-nums;
+        }
+        #lobbyScreen .highscore-box #lobbyHighScore { font-size: 18px; font-weight: 900; }
+        #lobbyScreen .highscore-box > div:first-child {
+            inline-size: 100%;
+            min-inline-size: 0;
+            justify-content: center;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        #lobbyScreen .highscore-box #lobbyHighScore {
+            min-inline-size: 0;
+            max-inline-size: 14ch;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #statsScreen { background: radial-gradient(circle at 16% 4%, rgba(199,125,255,0.2), transparent 38%), linear-gradient(145deg, #090a20, #191239); }
+        #leaderboardScreen { background: radial-gradient(circle at 16% 4%, rgba(0,217,255,0.2), transparent 38%), linear-gradient(145deg, #090a20, #111d45); }
+        #settingsScreen { background: radial-gradient(circle at 84% 8%, rgba(0,217,255,0.19), transparent 36%), linear-gradient(145deg, #070b1e, #102142); }
+        .settings-group { inline-size: 100%; }
+        .setting-item {
+            gap: 12px;
+            padding: 12px;
+            margin: 0;
+            border: 1px solid rgba(0,217,255,0.22);
+            border-radius: 14px;
+            background: rgba(4,9,29,0.36);
+            color: var(--ui-muted);
+            font-size: 13px;
+            text-align: start;
+        }
+        .setting-item select {
+            min-inline-size: 108px;
+            padding: 7px 28px 7px 10px;
+            border: 1px solid rgba(0,217,255,0.4);
+            border-radius: 9px;
+            background: #0a1634;
+            color: var(--ui-ink);
+            font: 800 12px/1.2 inherit;
+        }
+        .settings-actions { display: grid; gap: 9px; }
+        #btnResetScore { margin: 0; }
+
+        #pauseMenu { background: rgba(5,8,24,0.72); backdrop-filter: blur(14px); }
+        .pause-symbol {
+            inline-size: 58px;
+            block-size: 58px;
+            display: grid;
+            place-items: center;
+            justify-self: center;
+            border: 1px solid rgba(255,209,102,0.42);
+            border-radius: 50%;
+            background: rgba(255,209,102,0.1);
+            color: var(--ui-gold);
+            font-size: 27px;
+            box-shadow: 0 0 26px rgba(255,209,102,0.14);
+        }
+
+        #gameOver { background: radial-gradient(circle at 50% 0%, rgba(255,90,120,0.2), transparent 38%), linear-gradient(145deg, #190b22, #0b112a); }
+        #gameOver .scene-title { color: #fff4f7; }
+        .result-score {
+            display: grid;
+            gap: 3px;
+            padding: 13px;
+            border: 1px solid rgba(255,90,120,0.25);
+            border-radius: 17px;
+            background: rgba(255,90,120,0.08);
+        }
+        .score-label { color: var(--ui-muted); font-size: 12px; }
+        .score-value {
+            color: #fff;
+            font-size: clamp(42px, 13vw, 58px);
+            font-weight: 900;
+            line-height: 1;
+            text-shadow: 0 0 22px rgba(255,90,120,0.35);
+            font-variant-numeric: tabular-nums;
+        }
+        .new-record {
+            justify-self: center;
+            margin: 0;
+            padding: 6px 10px;
+            border: 1px solid rgba(46,213,115,0.34);
+            border-radius: 999px;
+            background: rgba(46,213,115,0.1);
+            color: var(--ui-lime);
+            font-size: 12px;
+            text-shadow: none;
+        }
+        .result-highscore {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: var(--ui-muted);
+            font-size: 13px;
+        }
+        .result-highscore strong { color: var(--ui-gold); font-size: 18px; font-variant-numeric: tabular-nums; }
+        #gameOverCups {
+            min-block-size: 30px;
+            color: var(--ui-gold);
+            font-size: 25px;
+            letter-spacing: 3px;
+        }
+
+        #score {
+            inset-block-start: calc(env(safe-area-inset-top) + 12px);
+            inset-inline-start: 50%;
+            display: none;
+            min-inline-size: 76px;
+            padding: 7px 14px;
+            border: 1px solid rgba(0,217,255,0.34);
+            border-radius: 999px;
+            background: rgba(5,10,30,0.72);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 22px rgba(0,0,0,0.22);
+            color: var(--ui-ink);
+            font-size: 24px;
+            line-height: 1;
+            text-align: center;
+            text-shadow: 0 0 14px rgba(0,217,255,0.42);
+            font-variant-numeric: tabular-nums;
+        }
+        #fuelBar {
+            inset-block-start: calc(env(safe-area-inset-top) + 58px);
+            inline-size: 132px;
+            block-size: 10px;
+            padding: 2px;
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 999px;
+            background: rgba(4,8,27,0.72);
+            box-shadow: 0 7px 18px rgba(0,0,0,0.2);
+        }
+        #fuelFill { background: linear-gradient(90deg, var(--ui-gold), #ff8f52); box-shadow: 0 0 12px rgba(255,209,102,0.5); }
+        #fuelWarning {
+            inset-block-start: calc(env(safe-area-inset-top) + 78px);
+            padding: 4px 9px;
+            border: 1px solid rgba(255,90,120,0.32);
+            border-radius: 999px;
+            background: rgba(40,7,21,0.72);
+            font-size: 11px;
+            text-shadow: none;
+        }
+        #classicStats,
+        #customStats { direction: ltr; unicode-bidi: plaintext; }
+        [dir="rtl"] .mode-card__arrow { transform: scaleX(-1); }
+        [dir="rtl"] .mode-card:hover .mode-card__arrow,
+        [dir="rtl"] .mode-card--custom[aria-expanded="true"] .mode-card__arrow { transform: translateX(-4px) scaleX(-1); }
+        [dir="rtl"] .custom-close:hover { transform: translateX(2px); }
+
+        @keyframes panel-enter {
+            from { opacity: 0; transform: translateY(12px) scale(0.985); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @media (max-height: 700px) {
+            .scene-panel { gap: 9px; padding: 16px; border-radius: 18px; }
+            .scene-title { font-size: 27px; }
+            .scene-subtitle { font-size: 12px; }
+            .menu-btn { min-block-size: 42px; padding: 9px 12px; font-size: 13px; }
+            .highscore-box { padding: 7px 11px; }
+            .mode-stat-card { padding: 8px; }
+            .metric { padding: 3px 0; }
+            .metric strong { font-size: 17px; }
+            .cups-panel { padding: 8px; }
+            .cups-display { font-size: 25px; }
+            .result-score { padding: 10px; }
+            .pause-symbol { inline-size: 50px; block-size: 50px; font-size: 23px; }
+        }
+        @media (max-height: 520px) {
+            .scene-panel { gap: 6px; padding: 11px; border-radius: 16px; }
+            .panel-lights,
+            .scene-subtitle { display: none; }
+            .scene-title { font-size: 23px; }
+            .menu-stack,
+            .screen-actions { gap: 6px; }
+            .menu-btn { min-block-size: 36px; padding: 7px 10px; font-size: 12px; }
+            .mode-stat-card { gap: 2px; padding: 6px 8px; }
+            .metric { padding: 1px 0; }
+            .metric strong { font-size: 15px; }
+            .cups-panel { padding: 6px; }
+            .cups-display { gap: 7px; font-size: 22px; }
+            .setting-item { padding: 8px; }
+            .score-value { font-size: 38px; }
+        }
+        @media (orientation: landscape) and (max-height: 650px) {
+            #gameContainer { inline-size: min(100vw, 500px, 62dvh); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .scene-panel,
+            .menu-btn { animation: none; transition: none; }
+        }
+
+        /* ====== UI Icons (no box/background — plain icons) ====== */
+        .icn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            vertical-align: middle;
+            margin-inline-end: 6px;
+            flex-shrink: 0;
+        }
+        .icn img { width: 20px; height: 20px; object-fit: contain; pointer-events: none; }
+
+        /* Game-mode cards (Classic / Custom) keep their boxed icon look */
+        .mode-card__icon img {
+            width: 34px; height: 34px; object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.35));
+        }
+        .pause-symbol img {
+            width: 28px; height: 28px; object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(255,209,102,0.4));
+        }
+        .trophy-icon {
+            width: 22px; height: 22px; object-fit: contain;
+            vertical-align: middle; margin-inline-end: 4px;
+            filter: drop-shadow(0 0 5px rgba(255,209,102,0.5));
+        }
+        .cup-img {
+            width: 32px; height: 32px; object-fit: contain;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.2));
+        }
+        .cup-item.earned .cup-img {
+            filter: drop-shadow(0 0 10px rgba(255,209,102,0.6));
+        }
+        .nr-icon {
+            width: 20px; height: 20px; object-fit: contain;
+            vertical-align: middle; margin-inline-end: 4px;
+            filter: drop-shadow(0 0 5px rgba(46,213,115,0.5));
+        }
+
+        /* ====== Cup Labels & Counter ====== */
+        .cup-label {
+            color: rgba(232,240,255,0.5);
+            font-size: 9px;
+            margin-top: 4px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+        .cup-item.earned .cup-label {
+            color: var(--ui-gold, #ffd166);
+            font-weight: 700;
+        }
+        /* Required score sits above the cup icon; the times-earned count sits below it */
+        .cup-threshold {
+            color: rgba(232,240,255,0.5);
+            font-size: 9px;
+            margin-bottom: 3px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+        .cup-count {
+            color: rgba(232,240,255,0.5);
+            font-size: 11px;
+            font-weight: 800;
+            margin-top: 4px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+        .cup-item.earned .cup-threshold { color: rgba(255,209,102,0.75); }
+        .cup-item.earned .cup-count { color: var(--ui-gold, #ffd166); }
+        .cups-count {
+            text-align: center;
+            color: var(--ui-gold, #ffd166);
+            font-size: 13px;
+            font-weight: 800;
+            margin-top: 6px;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.04em;
+        }
+        /* ====== Game Over Cups Section ====== */
+        .gameover-cups-section {
+            display: grid;
+            gap: 4px;
+            justify-items: center;
+            min-block-size: 30px;
+        }
+        .gameover-cups-label {
+            color: var(--ui-muted);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        #gameOverCups {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        /* ====== Stat Icons in Mode Cards ====== */
+        .stat-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+            vertical-align: middle;
+            margin-inline: 2px;
+            filter: drop-shadow(0 0 3px rgba(255,255,255,0.2));
+        }
+        #modeSelect .mode-stats .stat-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            margin-inline-end: 10px;
+        }
+        /* ====== Warning Icon ====== */
+        .warning-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+            vertical-align: middle;
+            margin-inline-end: 4px;
+            filter: drop-shadow(0 0 4px rgba(255,90,120,0.5));
+        }
+        /* Remove any leftover glow animations on cups */
+        .cup-item.earned .cup-img {
+            filter: drop-shadow(0 0 10px rgba(255,209,102,0.6));
+            animation: none;
+        }
+
+        /* ====== Modern form controls (settings + custom mode) ====== */
+        #settingsScreen .scene-panel { overflow: visible; }
+        #settingsScreen .settings-group {
+            position: relative;
+            z-index: 5; 
+        }
+        .setting-item {
+            position: relative; 
+        }
+        .setting-item:has(.select-modern.open) {
+            z-index: 20; 
+        }
+        .select-modern.open {
+            position: relative;
+            z-index: 25;
+        }
+
+        .sr-hidden-native {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* Custom dropdown (replaces native <select> look) */
+        .select-modern {
+            position: relative;
+            min-inline-size: 118px;
+        }
+        .select-modern .select-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 9px 12px;
+            border: 1px solid rgba(0,217,255,0.38);
+            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(0,217,255,0.14), rgba(255,255,255,0.045));
+            color: #fff;
+            font: 800 12px/1.2 inherit;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .select-modern .select-trigger:hover,
+        .select-modern.open .select-trigger {
+            border-color: rgba(0,217,255,0.8);
+            background: linear-gradient(145deg, rgba(0,217,255,0.22), rgba(0,217,255,0.08));
+            box-shadow: 0 8px 20px rgba(0,217,255,0.16);
+        }
+        .select-modern .chevron {
+            font-size: 10px;
+            opacity: 0.75;
+            transition: transform 0.2s ease;
+        }
+        .select-modern.open .chevron { transform: rotate(180deg); }
+        .select-modern .select-panel {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-inline-size: 100%;
+            z-index: 30;
+            border: 1px solid rgba(0,217,255,0.38);
+            border-radius: 12px;
+            overflow: hidden;
+            background: linear-gradient(160deg, rgba(9,13,36,0.98), rgba(15,20,50,0.98));
+            box-shadow: 0 18px 34px rgba(0,0,0,0.45);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-6px);
+            transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+        }
+        .select-modern.open .select-panel {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        .select-modern .select-option {
+            padding: 9px 13px;
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.78);
+            white-space: nowrap;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .select-modern .select-option:hover { background: rgba(0,217,255,0.14); color: #fff; }
+        .select-modern .select-option.active { background: rgba(0,217,255,0.2); color: #fff; }
+        .select-modern .select-option.active::after {
+            content: "✓";
+            color: var(--ui-cyan, #00d9ff);
+            font-weight: 900;
+        }
+
+        /* Segmented control (replaces radio buttons) */
+        .segmented {
+            display: inline-flex;
+            padding: 3px;
+            gap: 3px;
+            border-radius: 12px;
+            background: rgba(5,9,28,0.5);
+            border: 1px solid rgba(255,255,255,0.09);
+        }
+        .segmented button {
+            border: 0;
+            background: transparent;
+            color: rgba(255,255,255,0.58);
+            font: 800 11px/1.2 inherit;
+            padding: 7px 12px;
+            border-radius: 9px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .segmented button:hover { color: rgba(255,255,255,0.85); }
+        .segmented button.active {
+            background: linear-gradient(135deg, rgba(199,125,255,0.4), rgba(199,125,255,0.2));
+            color: #fff;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 4px 12px rgba(199,125,255,0.28);
+        }
+
+        /* Toggle switch (replaces checkbox) */
+        .toggle-switch {
+            position: relative;
+            inline-size: 42px;
+            block-size: 24px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.16);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .toggle-switch .knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            inline-size: 18px;
+            block-size: 18px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            transition: transform 0.2s ease;
+        }
+        .toggle-switch.on {
+            background: linear-gradient(135deg, rgba(46,213,115,0.6), rgba(46,213,115,0.38));
+            border-color: rgba(46,213,115,0.65);
+        }
+        .toggle-switch.on .knob { transform: translateX(18px); }
+        [dir="rtl"] .toggle-switch .knob { left: auto; right: 2px; }
+        [dir="rtl"] .toggle-switch.on .knob { transform: translateX(-18px); }
+
+        /* Stepper (replaces plain number input) */
+        .stepper { display: flex; align-items: center; gap: 6px; }
+        .stepper-btn {
+            inline-size: 26px;
+            block-size: 26px;
+            border-radius: 8px;
+            border: 1px solid rgba(199,125,255,0.4);
+            background: rgba(199,125,255,0.12);
+            color: #fff;
+            font-size: 15px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+        }
+        .stepper-btn:hover { background: rgba(199,125,255,0.26); border-color: rgba(199,125,255,0.7); }
+        .stepper-btn:active { transform: scale(0.9); }
+        #modeSelect .setting-row .stepper input[type="number"] {
+            width: 46px;
+            padding: 5px 2px;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        /* ====== Name Input Modal ====== */
+        #nameInputModal {
+            z-index: 100;
+            background: rgba(5,8,24,0.94);
+            backdrop-filter: blur(14px);
+        }
+        .name-input-box {
+            width: min(90%, 340px);
+            padding: 24px;
+            border: 1px solid rgba(0,217,255,0.4);
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(7,11,30,0.98), rgba(20,17,48,0.96));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 22px 50px rgba(0,0,0,0.4), 0 0 40px rgba(0,217,255,0.15);
+            text-align: center;
+            animation: panel-enter 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+        .name-input-box .ni-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 10px rgba(255,209,102,0.5));
+        }
+        .name-input-box h2 {
+            color: #fff;
+            font-size: 22px;
+            margin-bottom: 4px;
+            font-weight: 900;
+        }
+        .name-input-box .ni-score {
+            color: #ffd166;
+            font-size: 32px;
+            font-weight: 900;
+            margin: 8px 0 12px;
+            text-shadow: 0 0 18px rgba(255,209,102,0.4);
+            font-variant-numeric: tabular-nums;
+        }
+        .name-input-box .ni-sub {
+            color: rgba(232,240,255,0.65);
+            font-size: 12px;
+            margin-bottom: 14px;
+        }
+        .name-input-box input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid rgba(0,217,255,0.4);
+            border-radius: 12px;
+            background: rgba(5,9,28,0.6);
+            color: #fff;
+            font-size: 15px;
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-bottom: 10px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .name-input-box input:focus {
+            outline: none;
+            border-color: #00d9ff;
+            box-shadow: 0 0 0 3px rgba(0,217,255,0.18);
+        }
+        .name-input-box input::placeholder { color: rgba(232,240,255,0.35); font-weight: 400; }
+        .name-input-box .ni-actions { display: grid; gap: 7px; margin-top: 6px; }
+        .name-input-box .menu-btn { width: 100%; margin: 0; padding: 11px; font-size: 14px; }
+        .name-input-box .ni-error {
+            color: #ff5a78;
+            font-size: 11px;
+            margin-top: -4px;
+            margin-bottom: 6px;
+            display: none;
+        }
+        .name-input-box .ni-error.show { display: block; }
+        /* ====== Leaderboard list ====== */
+        .leaderboard-section {
+            margin-top: 8px;
+            padding: 10px;
+            background: rgba(0,217,255,0.06);
+            border: 1px solid rgba(0,217,255,0.18);
+            border-radius: 12px;
+            max-block-size: min(42dvh, 360px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,217,255,0.82) rgba(0,217,255,0.09);
+            width: 100%;
+        }
+        .leaderboard-section::-webkit-scrollbar { width: 8px; }
+        .leaderboard-section::-webkit-scrollbar-track {
+            margin: 5px 0;
+            border-radius: 999px;
+            background: rgba(0,217,255,0.09);
+        }
+        .leaderboard-section::-webkit-scrollbar-thumb {
+            min-height: 30px;
+            border: 2px solid rgba(5,15,40,0.65);
+            border-radius: 999px;
+            background: linear-gradient(180deg, var(--ui-cyan, #00d9ff), var(--ui-violet, #c77dff));
+            box-shadow: 0 0 10px rgba(0,217,255,0.5);
+        }
+        .leaderboard-section::-webkit-scrollbar-thumb:hover { background: var(--ui-cyan, #00d9ff); }
+        .mode-stat-card--custom .leaderboard-section {
+            background: rgba(199,125,255,0.06);
+            border-color: rgba(199,125,255,0.18);
+        }
+        .leaderboard-section h3 {
+            color: #00d9ff;
+            font-size: 12px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .mode-stat-card--custom .leaderboard-section h3 { color: #c77dff; }
+        .lb-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 8px;
+            margin: 3px 0;
+            background: rgba(255,255,255,0.04);
+            border-radius: 7px;
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+        .lb-entry.lb-mine {
+            background: linear-gradient(90deg, rgba(255,215,0,0.18), rgba(255,140,0,0.1));
+            border: 1px solid rgba(255,215,0,0.45);
+            box-shadow: 0 0 10px rgba(255,215,0,0.15);
+        }
+        .lb-rank { min-width: 28px; color: #888; font-weight: 700; }
+        .lb-entry:nth-child(1) .lb-rank { color: #ffd700; }
+        .lb-entry:nth-child(2) .lb-rank { color: #c0c0c0; }
+        .lb-entry:nth-child(3) .lb-rank { color: #cd7f32; }
+        .lb-name {
+            flex: 1;
+            text-align: start;
+            padding: 0 8px;
+            color: #e2e8ff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .lb-entry.lb-mine .lb-name { color: #fff; font-weight: 800; }
+        .lb-score { color: #00d9ff; font-weight: 700; }
+        .mode-stat-card--custom .lb-score { color: #c77dff; }
+        .lb-empty {
+            color: #555;
+            font-size: 11px;
+            text-align: center;
+            padding: 8px;
+            font-style: italic;
+        }
+        #leaderboardScreen { overflow: hidden; }
+        #leaderboardScreen .scene-panel { max-block-size: calc(100dvh - 24px); }
+        #leaderboardScreen .stats-board { min-block-size: 0; }
+
+        /* ====== Toast Notification ====== */
+        .toast {
+            visibility: hidden;
+            min-width: 220px;
+            max-width: 90%;
+            background-color: rgba(10, 10, 26, 0.95);
+            color: #fff;
+            text-align: center;
+            border-radius: 12px;
+            padding: 12px 16px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: -100px; /* Start hidden below screen */
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            border: 1px solid rgba(0,217,255,0.4);
+            opacity: 0;
+            transition: bottom 0.4s ease, opacity 0.4s ease;
+            pointer-events: none;
+        }
+        .toast.show {
+            visibility: visible;
+            bottom: 80px;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="bootLoader" role="status" aria-live="polite" aria-busy="true">
+            <div class="loader-card">
+                <div class="loader-mark"><img src="images/cover.png" alt="2 Cars"></div>
+                <div class="loader-bars" aria-hidden="true"><span></span><span></span><span></span></div>
+                <div id="bootLoaderLabel">Loading your profile...</div>
+            </div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="score">0</div>
+        <div id="fuelBar"><div id="fuelFill" style="width:100%"></div></div>
+        <div id="fuelWarning">سوخت کم!</div>
+
+        <!-- Lobby -->
+        <div id="lobbyScreen" class="overlay active">
+            <section class="scene-panel scene-panel--lobby" aria-labelledby="lobbyTitle">
+                <span class="panel-lights" aria-hidden="true"><span></span><span></span><span></span></span>
+                <img class="lobby-mark" src="images/cover.png" alt="2 Cars" style="width:58px;height:58px;object-fit:cover;border-radius:18px;">
+                <h1 class="scene-title" id="lobbyTitle">2 Cars</h1>
+                <div class="scene-subtitle" id="lobbySub">از موانع دوری کن و دوام بیار!</div>
+                
+                <!-- Username Box (Centered, No Timer Text) -->
+                <div class="username-box">
+                    <img src="images/ui/username.png" alt="User">
+                    <input type="text" id="lobbyUsernameInput" class="username-input" maxlength="15" placeholder="player">
+                </div>
+
+                <div class="menu-stack">
+                    <button class="menu-btn btn-play" id="btnPlay"><span class="icn icn-play"><img src="images/ui/play.png" alt=""></span> <span id="btnPlayLabel">شروع بازی</span></button>
+                    <button class="menu-btn btn-stats" id="btnStats"><span class="icn icn-stats"><img src="images/ui/stats.png" alt=""></span> <span id="btnStatsLabel">آمار</span></button>
+                    <button class="menu-btn btn-settings" id="btnSettingsLobby"><span class="icn icn-settings"><img src="images/ui/settings.png" alt=""></span> <span id="btnSettingsLabel">تنظیمات</span></button>
+                    <div class="highscore-box">
+                        <div style="display:flex;align-items:center;gap:7px;"><span id="lobbyHighScoreLabel">High Score</span><span aria-hidden="true">•</span><span id="lobbyHighScore">0</span></div>
+                        <div id="lobbyModeLabel" style="font-size:10px;color:rgba(255,209,102,0.7);font-variant-numeric:tabular-nums;text-transform:uppercase;letter-spacing:0.06em;">Classic</div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard shortcut -->
+                <div class="lobby-bottom-row">
+                    <button class="lb-btn-square" id="btnLeaderboardLobby" title="Leaderboard">
+                        <img src="images/ui/leaderboard.png" alt="Leaderboard">
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Mode Select -->
+        <div id="modeSelect" class="overlay">
+            <div class="mode-select-shell">
+                <div class="mode-select-main">
+                    <div class="mode-select-heading">
+                        <span class="mode-select-lights" aria-hidden="true"><span></span><span></span><span></span></span>
+                        <h2 id="modeTitle">انتخاب حالت</h2>
+                    </div>
+                    <div class="mode-list">
+                        <button class="mode-card mode-card--classic" id="modeClassic" type="button">
+                            <span class="mode-card__icon" aria-hidden="true"><img src="images/ui/play.png" class="mode-icon-img" alt=""></span>
+                            <span class="mode-card__body">
+                                <span class="mode-card__title" id="modeClassicTitle">کلاسیک</span>
+                                <span class="mode-card__description" id="modeClassicDesc">همان بازی معمولی با افزایش تدریجی سرعت</span>
+                                <span class="mode-stats" id="classicStats"></span>
+                            </span>
+                            <span class="mode-card__arrow" aria-hidden="true">→</span>
+                        </button>
+                        <button class="mode-card mode-card--custom" id="modeCustom" type="button" aria-expanded="false" aria-controls="customSettings">
+                            <span class="mode-card__icon" aria-hidden="true"><img src="images/ui/custom.png" class="mode-icon-img" alt=""></span>
+                            <span class="mode-card__body">
+                                <span class="mode-card__title" id="modeCustomTitle">سفارشی</span>
+                                <span class="mode-card__description" id="modeCustomDesc">تنظیم سرعت، کنترل و سوخت</span>
+                                <span class="mode-stats" id="customStats"></span>
+                            </span>
+                            <span class="mode-card__arrow" aria-hidden="true">→</span>
+                        </button>
+                    </div>
+                    <button class="menu-btn btn-back" id="btnBackLobby"><span class="icn icn-cancel"><img src="images/ui/back.png" alt=""></span> <span id="btnBackLobbyLabel">بازگشت</span></button>
+                </div>
+                <div id="customSettings" aria-hidden="true">
+                    <div class="custom-settings-panel">
+                        <button class="custom-close" id="btnCloseCustom" type="button"><span class="icn icn-cancel"><img src="images/ui/back.png" alt=""></span> <span id="btnCloseCustomLabel">Back</span></button>
+                        <!-- Stepper for Max Speed -->
+                        <div class="setting-row">
+                            <span id="customSpeedLabel">سرعت نهایی</span>
+                            <div class="stepper">
+                                <button class="stepper-btn" data-target="customMaxSpeed" data-dir="-1">−</button>
+                                <input type="number" id="customMaxSpeed" value="14" min="6" max="30" step="0.5">
+                                <button class="stepper-btn" data-target="customMaxSpeed" data-dir="1">+</button>
+                            </div>
+                        </div>
+                        <!-- Stepper for Time to reach -->
+                        <div class="setting-row">
+                            <span id="customTimeLabel">زمان رسیدن (دقیقه)</span>
+                            <div class="stepper">
+                                <button class="stepper-btn" data-target="customTimeToMax" data-dir="-1">−</button>
+                                <input type="number" id="customTimeToMax" value="1.5" min="0.5" max="5" step="0.1">
+                                <button class="stepper-btn" data-target="customTimeToMax" data-dir="1">+</button>
+                            </div>
+                        </div>
+                        <!-- Segmented control for Controls -->
+                        <div class="setting-row">
+                            <span id="customControlLabel">کنترل</span>
+                            <div class="segmented" role="group" aria-label="Control mode">
+                                <button class="active" data-value="classic" id="ctrlClassicBtn">کلاسیک</button>
+                                <button data-value="simple" id="ctrlSimpleBtn">ساده</button>
+                            </div>
+                        </div>
+                        <!-- Toggle switch for Fuel -->
+                        <div class="setting-row">
+                            <span id="customFuelLabel">سوخت اجباری</span>
+                            <div class="toggle-switch" id="customFuelToggle" role="switch" aria-checked="false">
+                                <div class="knob"></div>
+                            </div>
+                        </div>
+                        <button class="menu-btn btn-play btn-start-custom" id="btnStartCustom"><span class="icn icn-play"><img src="images/ui/play.png" alt=""></span> شروع سفارشی</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div id="statsScreen" class="overlay">
+            <section class="scene-panel scene-panel--stats" aria-labelledby="statsTitle">
+                <span class="panel-lights" aria-hidden="true"><span></span><span></span><span></span></span>
+                <h2 class="scene-title" id="statsTitle"><span class="icn icn-stats"><img src="images/ui/stats.png" alt=""></span> آمار</h2>
+                <div class="stats-board">
+                    <!-- Classic Mode -->
+                    <section class="mode-stat-card mode-stat-card--classic">
+                        <div class="mode-stat-header" id="statsModeLabel">حالت کلاسیک</div>
+                        <div class="metric"><span id="statGamesLabel">بازی</span><strong id="statGamesC">0</strong></div>
+                        <div class="metric"><span id="statHighScoreLabel">امتیاز</span><strong id="statHighC">0</strong></div>
+                    </section>
+
+                    <!-- Cups (Classic only) -->
+                    <div class="cups-panel">
+                        <div id="cupsLabel"><img src="images/ui/trophy.png" class="trophy-icon" alt=""> کاپ‌ها</div>
+                        <div class="cups-display">
+                            <div class="cup-item" id="cupBronze">
+                                <div class="cup-threshold">100</div>
+                                <div><img src="images/ui/cup1.png" class="cup-img" alt=""></div>
+                                <div class="cup-count" id="cupBronzeCount">0</div>
+                            </div>
+                            <div class="cup-item" id="cupSilver">
+                                <div class="cup-threshold">250</div>
+                                <div><img src="images/ui/cup2.png" class="cup-img" alt=""></div>
+                                <div class="cup-count" id="cupSilverCount">0</div>
+                            </div>
+                            <div class="cup-item" id="cupGold">
+                                <div class="cup-threshold">400</div>
+                                <div><img src="images/ui/cup3.png" class="cup-img" alt=""></div>
+                                <div class="cup-count" id="cupGoldCount">0</div>
+                            </div>
+                            <div class="cup-item" id="cupDiamond">
+                                <div class="cup-threshold">700</div>
+                                <div><img src="images/ui/cup4.png" class="cup-img" alt=""></div>
+                                <div class="cup-count" id="cupDiamondCount">0</div>
+                            </div>
+                            <div class="cup-item" id="cup5">
+                                <div class="cup-threshold">1000</div>
+                                <div><img src="images/ui/cup5.png" class="cup-img" alt=""></div>
+                                <div class="cup-count" id="cup5Count">0</div>
+                            </div>
+                        </div>
+                        <div id="cupsCount" class="cups-count">0 / 5</div>
+                    </div>
+
+                    <!-- Custom Mode -->
+                    <section class="mode-stat-card mode-stat-card--custom">
+                        <div class="mode-stat-header" id="statsModeLabel2">حالت سفارشی</div>
+                        <div class="metric"><span id="statGamesLabel2">بازی</span><strong id="statGamesCu">0</strong></div>
+                        <div class="metric"><span id="statHighScoreLabel2">امتیاز</span><strong id="statHighCu">0</strong></div>
+                    </section>
+                </div>
+                <button class="menu-btn btn-back" id="btnBackStats"><span class="icn icn-cancel"><img src="images/ui/back.png" alt=""></span> <span id="btnBackStatsLabel">بازگشت</span></button>
+            </section>
+        </div>
+
+        <!-- Leaderboard Screen (Updated, Bilingual & Smaller Title) -->
+        <div id="leaderboardScreen" class="overlay">
+            <section class="scene-panel scene-panel--stats" aria-labelledby="leaderboardTitleText">
+                <span class="panel-lights" aria-hidden="true"><span></span><span></span><span></span></span>
+                <h2 class="scene-title" id="leaderboardTitleText" style="font-size: clamp(22px, 5vw, 30px); margin-bottom: 12px;"><span class="icn icn-stats"><img src="images/ui/leaderboard.png" alt=""></span> <span id="leaderboardTitleLabel"></span></h2>
+                <div class="stats-board" style="align-items: center; justify-content: center; width: 100%;">
+                    <section class="mode-stat-card mode-stat-card--classic" style="width: 100%; max-width: 320px;">
+                        <div class="mode-stat-header" id="leaderboardModeLabel"></div>
+                        <div class="leaderboard-section" tabindex="0">
+                            <div id="lbClassicMain"></div>
+                        </div>
+                    </section>
+                </div>
+                <button class="menu-btn btn-back" id="btnBackLeaderboard" style="max-width: 220px;"><span class="icn icn-cancel"><img src="images/ui/back.png" alt=""></span> <span id="btnBackLeaderboardLabel"></span></button>
+            </section>
+        </div>
+
+        <!-- Settings -->
+        <div id="settingsScreen" class="overlay">
+            <section class="scene-panel scene-panel--settings" aria-labelledby="settingsTitle">
+                <span class="panel-lights" aria-hidden="true"><span></span><span></span><span></span></span>
+                <h2 class="scene-title" id="settingsTitle"><span class="icn icn-settings"><img src="images/ui/settings.png" alt=""></span> تنظیمات</h2>
+                <div class="settings-group">
+                    <!-- Language Select (custom dropdown) -->
+                    <div class="setting-item">
+                        <span class="icn icn-language"><img src="images/ui/language.png" alt=""></span> <span id="settingsLangLabel">زبان / Language</span>
+                        <div class="select-modern" id="langSelectContainer">
+                            <div class="select-trigger" role="button" tabindex="0">
+                                <span class="selected-label">English</span>
+                                <span class="chevron">▼</span>
+                            </div>
+                            <div class="select-panel" role="listbox">
+                                <div class="select-option" data-value="fa">فارسی</div>
+                                <div class="select-option active" data-value="en">English</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Quality Select (custom dropdown) -->
+                    <div class="setting-item">
+                        <span id="settingsQualityLabel">کیفیت گرافیک</span>
+                        <div class="select-modern" id="qualitySelectContainer">
+                            <div class="select-trigger" role="button" tabindex="0">
+                                <span class="selected-label">خودکار (Auto)</span>
+                                <span class="chevron">▼</span>
+                            </div>
+                            <div class="select-panel" role="listbox">
+                                <div class="select-option active" data-value="auto">Auto</div>
+                                <div class="select-option" data-value="medium">Medium</div>
+                                <div class="select-option" data-value="low">Low</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-actions">
+                    <button class="menu-btn btn-danger" id="btnResetScore"><span class="icn icn-trash"><img src="images/ui/trash.png" alt=""></span> <span id="resetLabel">پاک کردن رکورد</span></button>
+                    <button class="menu-btn btn-back" id="btnBackSettings"><span class="icn icn-cancel"><img src="images/ui/back.png" alt=""></span> <span id="backLabel">بازگشت</span></button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Pause -->
+        <div id="pauseMenu" class="overlay">
+            <section class="scene-panel scene-panel--pause" aria-labelledby="pauseTitle">
+                <div class="pause-symbol" aria-hidden="true"><img src="images/ui/pause.png" class="pause-icon-img" alt=""></div>
+                <h2 class="scene-title" id="pauseTitle"><span class="icn icn-pause"><img src="images/ui/pause.png" alt=""></span> مکث</h2>
+                <div class="screen-actions">
+                    <button class="menu-btn btn-resume" id="btnResume"><span class="icn icn-play"><img src="images/ui/play.png" alt=""></span> <span id="resumeLabel">ادامه بازی</span></button>
+                    <button class="menu-btn btn-lobby" id="btnLobbyPause"><span class="icn icn-lobby"><img src="images/ui/lobby.png" alt=""></span> <span id="lobbyLabel">لابی</span></button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Game Over -->
+        <div id="gameOver" class="overlay">
+            <section class="scene-panel scene-panel--result" aria-labelledby="gameOverTitle">
+                <span class="panel-lights" aria-hidden="true"><span></span><span></span><span></span></span>
+                <h1 class="scene-title" id="gameOverTitle">بازی تمام!</h1>
+                <div class="result-score">
+                    <div class="score-label" id="finalScoreLabel">امتیاز شما</div>
+                    <div class="score-value" id="finalScore">0</div>
+                </div>
+                <div class="new-record" id="newRecord"><img src="images/ui/star.png" class="nr-icon" alt=""> رکورد جدید!</div>
+                <div class="result-highscore"><img src="images/ui/star.png" class="trophy-icon" alt=""> <span id="finalHighScoreLabel">رکورد</span><strong id="finalHighScore">0</strong></div>
+                <div class="gameover-cups-section" id="gameoverCupsSection">
+                    <div class="gameover-cups-label" id="gameOverCupsLabel">کاپ‌ها</div>
+                    <div id="gameOverCups"></div>
+                </div>
+                <div class="screen-actions">
+                    <button class="menu-btn btn-play" id="btnRestart"><span class="icn icn-play"><img src="images/ui/play.png" alt=""></span> <span id="restartLabel">بازی مجدد</span></button>
+                    <button class="menu-btn btn-lobby" id="btnLobbyOver"><span class="icn icn-lobby"><img src="images/ui/lobby.png" alt=""></span> <span id="lobbyLabel2">لابی</span></button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Name Input Modal -->
+        <div id="nameInputModal" class="overlay">
+            <div class="name-input-box">
+                <div class="ni-icon"><img src="images/ui/trophy.png" class="trophy-icon" alt=""></div>
+                <h2 id="niTitle">ثبت در لیدربورد</h2>
+                <div class="ni-score" id="niScore">0</div>
+                <div class="ni-sub" id="niSub">اسمت رو وارد کن تا امتیازت در جدول جهانی ثبت بشه</div>
+                <input type="text" id="playerNameInput" maxlength="15" autocomplete="off" spellcheck="false">
+                <div class="ni-error" id="niError"></div>
+                <div class="ni-actions">
+                    <button class="menu-btn btn-play" id="saveNameBtn">ثبت امتیاز</button>
+                    <button class="menu-btn btn-back" id="skipNameBtn">بعداً</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- First-visit name selection; the lobby remains visible behind this overlay. -->
+        <div id="firstNameModal" class="overlay" aria-hidden="true">
+            <section class="first-name-card" role="dialog" aria-modal="true" aria-labelledby="firstNameTitle" aria-describedby="firstNameDescription">
+                <div class="first-name-mark"><img src="images/ui/username.png" alt=""></div>
+                <h2 id="firstNameTitle">Choose your player name</h2>
+                <p id="firstNameDescription">This name appears on the leaderboard.</p>
+                <input id="firstNameInput" type="text" maxlength="15" autocomplete="off" spellcheck="false" placeholder="Player name">
+                <div class="first-name-error" id="firstNameError" aria-live="polite"></div>
+                <div class="first-name-actions">
+                    <button class="menu-btn btn-play" id="firstNameSaveBtn" type="button">Save</button>
+                    <button class="menu-btn btn-back" id="firstNameSkipBtn" type="button">Skip</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toastNotification" class="toast"></div>
+    </div>
+    <script>
+// ============================================================
+//  🚗  2 CARS  –  Secure Server-side Version
+// ============================================================
+
+const API_BASE = '/api/game';
+
+// ====== DOM references ======
+const bootLoader = document.getElementById('bootLoader');
+const bootLoaderLabel = document.getElementById('bootLoaderLabel');
+const firstNameModal = document.getElementById('firstNameModal');
+const firstNameInput = document.getElementById('firstNameInput');
+const firstNameError = document.getElementById('firstNameError');
+const firstNameSaveBtn = document.getElementById('firstNameSaveBtn');
+const firstNameSkipBtn = document.getElementById('firstNameSkipBtn');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const fuelFill = document.getElementById('fuelFill');
+const fuelBar = document.getElementById('fuelBar');
+const fuelWarning = document.getElementById('fuelWarning');
+const lobbyScreen = document.getElementById('lobbyScreen');
+const modeSelect = document.getElementById('modeSelect');
+const settingsScreen = document.getElementById('settingsScreen');
+const statsScreen = document.getElementById('statsScreen');
+const leaderboardScreen = document.getElementById('leaderboardScreen');
+const pauseMenu = document.getElementById('pauseMenu');
+const gameOverEl = document.getElementById('gameOver');
+const btnPlay = document.getElementById('btnPlay');
+const btnStats = document.getElementById('btnStats');
+const btnSettingsLobby = document.getElementById('btnSettingsLobby');
+const btnBackSettings = document.getElementById('btnBackSettings');
+const btnResume = document.getElementById('btnResume');
+const btnLobbyPause = document.getElementById('btnLobbyPause');
+const btnLobbyOver = document.getElementById('btnLobbyOver');
+const btnRestart = document.getElementById('btnRestart');
+const btnResetScore = document.getElementById('btnResetScore');
+const btnBackLobby = document.getElementById('btnBackLobby');
+const btnCloseCustom = document.getElementById('btnCloseCustom');
+const btnBackStats = document.getElementById('btnBackStats');
+const btnStartCustom = document.getElementById('btnStartCustom');
+const btnLeaderboardLobby = document.getElementById('btnLeaderboardLobby');
+const btnBackLeaderboard = document.getElementById('btnBackLeaderboard');
+const modeClassic = document.getElementById('modeClassic');
+const modeCustom = document.getElementById('modeCustom');
+const customSettings = document.getElementById('customSettings');
+const modeSelectMain = document.querySelector('.mode-select-main');
+const customMaxSpeed = document.getElementById('customMaxSpeed');
+const customTimeToMax = document.getElementById('customTimeToMax');
+const customFuelToggle = document.getElementById('customFuelToggle');
+const segmentedControls = document.querySelector('.segmented');
+const langSelectContainer = document.getElementById('langSelectContainer');
+const qualitySelectContainer = document.getElementById('qualitySelectContainer');
+const finalScoreEl = document.getElementById('finalScore');
+const finalHighScoreEl = document.getElementById('finalHighScore');
+const newRecordEl = document.getElementById('newRecord');
+const lobbyHighScoreEl = document.getElementById('lobbyHighScore');
+const gameOverCups = document.getElementById('gameOverCups');
+const gameoverCupsSection = document.getElementById('gameoverCupsSection');
+const statGamesC = document.getElementById('statGamesC');
+const statHighC = document.getElementById('statHighC');
+const statGamesCu = document.getElementById('statGamesCu');
+const statHighCu = document.getElementById('statHighCu');
+const cupBronze = document.getElementById('cupBronze');
+const cupSilver = document.getElementById('cupSilver');
+const cupGold = document.getElementById('cupGold');
+const cupDiamond = document.getElementById('cupDiamond');
+const cup5 = document.getElementById('cup5');
+
+// ====== Toast System ======
+let toastTimeout;
+function showToast(message) {
+    const toast = document.getElementById("toastNotification");
+    toast.innerHTML = message.replace(/\n/g, '<br>');
+    toast.classList.add("show");
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove("show"), 4000);
+}
+
+function finishBootLoading() {
+    bootLoader.setAttribute('aria-busy', 'false');
+    bootLoader.classList.add('is-hidden');
+    window.setTimeout(() => bootLoader.remove(), 300);
+}
+
+const FIRST_NAME_INTRO_KEY = 'twoCars_first_name_intro_seen_v1';
+
+function shouldShowFirstNameIntro() {
+    return Boolean(playerData) && playerData.username === 'player' && !localStorage.getItem(FIRST_NAME_INTRO_KEY);
+}
+
+function openFirstNameIntro() {
+    firstNameError.textContent = '';
+    firstNameInput.value = '';
+    firstNameModal.classList.add('active');
+    firstNameModal.setAttribute('aria-hidden', 'false');
+    window.setTimeout(() => firstNameInput.focus(), 60);
+}
+
+function closeFirstNameIntro() {
+    firstNameModal.classList.remove('active');
+    firstNameModal.setAttribute('aria-hidden', 'true');
+    localStorage.setItem(FIRST_NAME_INTRO_KEY, '1');
+}
+
+async function saveFirstName() {
+    const username = firstNameInput.value.trim();
+    if (!username) {
+        firstNameError.textContent = t('firstNameErrorEmpty');
+        firstNameInput.focus();
+        return;
+    }
+    firstNameSaveBtn.disabled = true;
+    firstNameSkipBtn.disabled = true;
+    firstNameError.textContent = '';
+    const result = await changeUsername(username);
+    if (result.ok) {
+        closeFirstNameIntro();
+        checkUsernameChangeAvailability();
+        updateStatsDisplay();
+    } else {
+        firstNameError.textContent = t('firstNameErrorNetwork');
+    }
+    firstNameSaveBtn.disabled = false;
+    firstNameSkipBtn.disabled = false;
+}
+
+// ====== API Functions ======
+function getDeviceId() {
+    let id = localStorage.getItem('deviceId');
+    if (!id) {
+        id = 'dev_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        localStorage.setItem('deviceId', id);
+    }
+    return id;
+}
+
+// Player data from server (authoritative)
+let playerData = null;
+
+async function fetchPlayerData() {
+    try {
+        const deviceId = getDeviceId();
+        const url = `${API_BASE}/me?deviceId=${encodeURIComponent(deviceId)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.ok) {
+            playerData = data.player;
+            localStorage.setItem('playerName', playerData.username);
+            return true;
+        }
+        return false;
+    } catch (err) {
+        console.error('Fetch player error:', err);
+        return false;
+    }
+}
+
+async function registerOrUpdatePlayer(username) {
+    try {
+        const deviceId = getDeviceId();
+        const url = `${API_BASE}/register?username=${encodeURIComponent(username)}&deviceId=${encodeURIComponent(deviceId)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.ok) {
+            localStorage.setItem('playerName', data.username);
+            await fetchPlayerData();
+            return { ok: true, username: data.username };
+        }
+        return { ok: false, error: data.error };
+    } catch (err) {
+        console.error('Register error:', err);
+        return { ok: false, error: 'network' };
+    }
+}
+
+async function changeUsername(newUsername) {
+    try {
+        const deviceId = getDeviceId();
+        const url = `${API_BASE}/change-name?username=${encodeURIComponent(newUsername)}&deviceId=${encodeURIComponent(deviceId)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.ok) {
+            localStorage.setItem('playerName', data.username);
+            await fetchPlayerData();
+            return { ok: true };
+        }
+        return { ok: false, error: data.error, remaining_ms: data.remaining_ms };
+    } catch (err) {
+        return { ok: false, error: 'network' };
+    }
+}
+
+async function submitScore(score, mode, sessionStart) {
+    try {
+        const deviceId = getDeviceId();
+        const url = `${API_BASE}/submit?deviceId=${encodeURIComponent(deviceId)}&score=${score}&mode=${mode}&sessionStart=${sessionStart}`;
+        const response = await fetch(url);
+        return await response.json();
+    } catch (err) {
+        console.error('Submit error:', err);
+        return { ok: false, error: 'network' };
+    }
+}
+
+async function fetchLeaderboard(mode, limit = 10) {
+    try {
+        const url = `${API_BASE}/top?mode=${mode}&limit=${limit}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.ok ? data.top : [];
+    } catch (err) {
+        console.error('Fetch LB error:', err);
+        return [];
+    }
+}
+
+function renderLeaderboard(containerId, entries) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const playerName = (localStorage.getItem('playerName') || '').toLowerCase();
+    if (!entries || entries.length === 0) {
+        container.innerHTML = `<div class="lb-empty">${currentLang === 'fa' ? 'هنوز امتیازی ثبت نشده' : 'No scores yet'}</div>`;
+        return;
+    }
+    container.innerHTML = entries.map((entry, i) => {
+        const name = String(entry.name || 'Player');
+        const safeName = name.replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[char]));
+        const score = Number.isFinite(Number(entry.score)) ? Number(entry.score) : 0;
+        const isMine = playerName && name.toLowerCase() === playerName;
+        const rankDisplay = `#${i + 1}`;
+        return `
+            <div class="lb-entry ${isMine ? 'lb-mine' : ''}">
+                <span class="lb-rank">${rankDisplay}</span>
+                <span class="lb-name">${safeName}</span>
+                <span class="lb-score">${score}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// ====== Username Logic (Lobby) ======
+const lobbyUsernameInput = document.getElementById('lobbyUsernameInput');
+
+function checkUsernameChangeAvailability() {
+    if (!playerData) {
+        lobbyUsernameInput.value = localStorage.getItem('playerName') || 'player';
+        return;
+    }
+    lobbyUsernameInput.value = playerData.username;
+    const lastChange = playerData.last_username_change;
+    const isInitialDefaultName = playerData.username === 'player';
+    if (!lastChange || isInitialDefaultName) {
+        lobbyUsernameInput.disabled = false;
+        return;
+    }
+    const lastMs = new Date(lastChange).getTime();
+    const dayInMs = 24 * 60 * 60 * 1000;
+    const elapsed = Date.now() - lastMs;
+    lobbyUsernameInput.disabled = elapsed < dayInMs;
+}
+
+function showCooldownToast() {
+    if (!playerData || !playerData.last_username_change) return;
+    const lastMs = new Date(playerData.last_username_change).getTime();
+    const dayInMs = 24 * 60 * 60 * 1000;
+    const remaining = dayInMs - (Date.now() - lastMs);
+    if (remaining > 0) {
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const msg = currentLang === 'fa'
+            ? `شما فقط هر ۲۴ ساعت یکبار می‌توانید نام خود را تغییر دهید.\nزمان باقیمانده: ${hours} ساعت و ${minutes} دقیقه`
+            : `You can only change your name once every 24 hours.\nTime left: ${hours}h ${minutes}m`;
+        showToast(msg);
+    }
+}
+
+async function saveUsername() {
+    if (lobbyUsernameInput.disabled) {
+        showCooldownToast();
+        return;
+    }
+    const newName = lobbyUsernameInput.value.trim() || 'player';
+    const result = await changeUsername(newName);
+    if (result.ok) {
+        checkUsernameChangeAvailability();
+        updateStatsDisplay();
+        showToast(currentLang === 'fa'
+            ? 'نام شما با موفقیت ثبت شد! شما می‌توانید ۲۴ ساعت دیگر دوباره نام خود را تغییر دهید.'
+            : 'Name saved successfully! You can change it again in 24 hours.');
+    } else if (result.error === 'cooldown') {
+        showCooldownToast();
+    } else {
+        showToast(currentLang === 'fa' ? 'خطا در تغییر نام' : 'Error changing name');
+    }
+}
+
+lobbyUsernameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        saveUsername();
+        lobbyUsernameInput.blur();
+    }
+});
+lobbyUsernameInput.addEventListener('blur', saveUsername);
+lobbyUsernameInput.addEventListener('click', () => {
+    if (lobbyUsernameInput.disabled) showCooldownToast();
+});
+
+// ====== Stats (Server-side, fallback to local) ======
+function getLocalStatsFallback() {
+    try {
+        const raw = localStorage.getItem('twoCars_stats_v4');
+        if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return {
+        classic: { games: 0, highScore: 0 },
+        custom: { games: 0, highScore: 0 },
+        cups: { cup1: 0, cup2: 0, cup3: 0, cup4: 0, cup5: 0 }
+    };
+}
+
+function getCurrentStats() {
+    // اگه playerData موجوده، از سرور استفاده کن
+    if (playerData) {
+        return {
+            classic: {
+                games: playerData.games_classic,
+                highScore: playerData.high_score_classic,
+            },
+            custom: {
+                games: playerData.games_custom,
+                highScore: playerData.high_score_custom,
+            },
+            cups: playerData.cups,
+            total_score: playerData.total_score,
+        };
+    }
+    // Fallback به localStorage
+    const local = getLocalStatsFallback();
+    return {
+        classic: local.classic,
+        custom: local.custom,
+        cups: local.cups,
+        total_score: (local.classic.highScore || 0) + (local.custom.highScore || 0),
+    };
+}
+
+async function updateStatsDisplay() {
+    const stats = getCurrentStats();
+    statGamesC.textContent = stats.classic.games;
+    statHighC.textContent = stats.classic.highScore;
+    statGamesCu.textContent = stats.custom.games;
+    statHighCu.textContent = stats.custom.highScore;
+
+    const lastModeHigh = lastPlayedMode === 'classic' ? stats.classic.highScore : stats.custom.highScore;
+    lobbyHighScoreEl.textContent = lastModeHigh;
+
+    const modeLabelEl = document.getElementById('lobbyModeLabel');
+    if (modeLabelEl) {
+        modeLabelEl.textContent = lastPlayedMode === 'classic'
+            ? (currentLang === 'fa' ? 'کلاسیک' : 'Classic')
+            : (currentLang === 'fa' ? 'سفارشی' : 'Custom');
+    }
+
+    cupBronze.classList.toggle('earned', stats.cups.cup1 > 0);
+    cupSilver.classList.toggle('earned', stats.cups.cup2 > 0);
+    cupGold.classList.toggle('earned', stats.cups.cup3 > 0);
+    cupDiamond.classList.toggle('earned', stats.cups.cup4 > 0);
+    cup5.classList.toggle('earned', stats.cups.cup5 > 0);
+
+    document.getElementById('cupBronzeCount').textContent = stats.cups.cup1 || 0;
+    document.getElementById('cupSilverCount').textContent = stats.cups.cup2 || 0;
+    document.getElementById('cupGoldCount').textContent = stats.cups.cup3 || 0;
+    document.getElementById('cupDiamondCount').textContent = stats.cups.cup4 || 0;
+    document.getElementById('cup5Count').textContent = stats.cups.cup5 || 0;
+
+    const cupsUnlocked = [stats.cups.cup1, stats.cups.cup2, stats.cups.cup3, stats.cups.cup4, stats.cups.cup5]
+        .filter(c => c > 0).length;
+    document.getElementById('cupsCount').textContent = `${cupsUnlocked} / 5`;
+
+    document.getElementById('classicStats').innerHTML =
+        `<span class="stat-group">${stats.classic.games}</span>` +
+        `<span class="stat-group"><img src="images/ui/trophy.png" class="stat-icon" alt=""> ${stats.classic.highScore}</span>`;
+    document.getElementById('customStats').innerHTML =
+        `<span class="stat-group">${stats.custom.games}</span>` +
+        `<span class="stat-group"><img src="images/ui/trophy.png" class="stat-icon" alt=""> ${stats.custom.highScore}</span>`;
+}
+
+// ====== Canvas & Game Setup ======
+let cachedBackdrop = null, cachedHorizonGlow = null;
+const gradientCache = {};
+
+function rebuildStaticGradients() {
+    if (!canvas.width || !canvas.height) return;
+    const width = canvas.width, height = canvas.height;
+    cachedBackdrop = ctx.createLinearGradient(0, 0, 0, height);
+    cachedBackdrop.addColorStop(0, '#050817');
+    cachedBackdrop.addColorStop(0.48, '#0a1430');
+    cachedBackdrop.addColorStop(1, '#060a1b');
+    cachedHorizonGlow = ctx.createRadialGradient(width*0.5, height*0.04, 0, width*0.5, height*0.04, width*0.72);
+    cachedHorizonGlow.addColorStop(0, 'rgba(0,217,255,0.16)');
+    cachedHorizonGlow.addColorStop(0.45, 'rgba(199,125,255,0.06)');
+    cachedHorizonGlow.addColorStop(1, 'rgba(0,0,0,0)');
+}
+function getCachedGradient(key, x0, y0, x1, y1, stops) {
+    let g = gradientCache[key];
+    if (g) return g;
+    g = ctx.createLinearGradient(x0, y0, x1, y1);
+    for (let i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+    gradientCache[key] = g;
+    return g;
+}
+function resize() {
+    const c = document.getElementById('gameContainer');
+    canvas.width = c.clientWidth;
+    canvas.height = c.clientHeight;
+    rebuildStaticGradients();
+}
+window.addEventListener('resize', resize);
+
+const carW = 42, carH = 72;
+const BASE_SPEED = 8;
+const MAX_SPEED_CLASSIC = 14;
+const MAX_FUEL = 100;
+const FUEL_DRAIN_PER_SEC = 3;
+const FUEL_WARNING = 25;
+const TARGET_FPS = 60;
+
+let scene = 'LOBBY', previousScene = 'LOBBY';
+let laneWidth = 0, leftCar = null, rightCar = null;
+let obstacles = [], fuels = [], particles = [];
+let score = 0, timeScore = 0, fuelScore = 0;
+let speed = BASE_SPEED;
+let gameStartTime = 0, pauseStartTime = 0, totalPausedTime = 0;
+let fuel = MAX_FUEL, gameMode = 'classic';
+let customMaxSpeedVal = 7, customTimeToMaxVal = 1.5;
+let controlMode = 'classic', fuelMandatory = false;
+let fuelEmpty = false, gameOverTriggered = false;
+let lastPlayedMode = 'classic';
+let animTime = 0, roadOffset = 0, fuelSpawnAcc = 0, trailAcc = 0;
+let qualityMode = 'auto', quality = 'medium';
+let fpsHistory = [];
+let currentSessionStart = 0;  // برای آنتی‌چیت
+
+function loadQualityPref() {
+    try {
+        const saved = localStorage.getItem('twoCars_quality_v1');
+        if (saved && ['auto','medium','low'].includes(saved)) qualityMode = saved;
+    } catch(e) {}
+    quality = qualityMode === 'auto' ? 'medium' : qualityMode;
+}
+function saveQualityPref() {
+    try { localStorage.setItem('twoCars_quality_v1', qualityMode); } catch(e) {}
+}
+function trackAdaptiveQuality(dt) {
+    if (qualityMode !== 'auto') { quality = qualityMode; return; }
+    if (dt <= 0) return;
+    const fps = 1/dt;
+    fpsHistory.push(fps);
+    if (fpsHistory.length > 90) fpsHistory.shift();
+    if (fpsHistory.length < 60) return;
+    const avg = fpsHistory.reduce((a,b)=>a+b,0)/fpsHistory.length;
+    if (avg < 40 && quality === 'medium') { quality = 'low'; fpsHistory.length = 0; }
+    else if (avg > 55 && quality === 'low') { quality = 'medium'; fpsHistory.length = 0; }
+}
+function trailIntervalForQuality() {
+    if (quality === 'medium') return 0.1;
+    return 0.2;
+}
+function getLaneCenter(l) { return l * laneWidth + laneWidth / 2; }
+
+function initGame() {
+    resize();
+    laneWidth = canvas.width / 4;
+    const ly = canvas.height - carH - 40;
+    leftCar = { lane: 0, x: getLaneCenter(0), y: ly, targetX: getLaneCenter(0), color: '#e94560' };
+    rightCar = { lane: 2, x: getLaneCenter(2), y: ly, targetX: getLaneCenter(2), color: '#00d9ff' };
+    obstacles = []; fuels = []; particles = [];
+    score = 0; timeScore = 0; fuelScore = 0;
+    speed = BASE_SPEED;
+    gameStartTime = Date.now();
+    currentSessionStart = gameStartTime;
+    totalPausedTime = 0;
+    fuel = MAX_FUEL;
+    fuelEmpty = false;
+    gameOverTriggered = false;
+    fuelSpawnAcc = 0; trailAcc = 0; animTime = 0; roadOffset = 0;
+    fpsHistory.length = 0;
+    scoreEl.textContent = '0';
+    fuelFill.style.width = '100%';
+    fuelWarning.style.display = 'none';
+    fuelBar.style.display = (fuelMandatory && gameMode === 'custom') ? 'block' : 'none';
+}
+function getElapsed() {
+    if (scene !== 'PLAYING') return 0;
+    return (Date.now() - gameStartTime - totalPausedTime) / 1000;
+}
+function canSpawnWave() {
+    for (let o of obstacles) if (o.y > -120 && o.y < 250) return false;
+    return true;
+}
+function spawnWave() {
+    const patterns = [[0],[1],[2],[3],[0,2],[0,3],[1,2],[1,3]];
+    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+    for (let lane of pattern) {
+        obstacles.push({
+            x: getLaneCenter(lane), y: -carH - 20, lane,
+            w: carW, h: carH,
+            color: lane < 2 ? '#ff5a78' : '#c77dff',
+            phase: Math.random() * Math.PI * 2,
+            variant: Math.random() > 0.5 ? 1 : 0
+        });
+    }
+}
+function spawnFuel() {
+    if (Math.random() > 0.035) return;
+    const lane = Math.floor(Math.random() * 4);
+    for (let o of obstacles) if (o.lane === lane && o.y > -80 && o.y < 180) return;
+    fuels.push({ x: getLaneCenter(lane), y: -30, lane, r: 14, rot: 0, phase: Math.random() * Math.PI * 2 });
+}
+
+function update(dt) {
+    if (scene !== 'PLAYING' || gameOverTriggered) return;
+    const elapsed = getElapsed();
+    let target;
+    if (gameMode === 'classic') {
+        const totalTime = 120;
+        target = BASE_SPEED + (elapsed / totalTime) * (MAX_SPEED_CLASSIC - BASE_SPEED);
+        if (target > MAX_SPEED_CLASSIC) target = MAX_SPEED_CLASSIC;
+    } else {
+        const totalTime = customTimeToMaxVal * 60;
+        if (totalTime > 0) {
+            target = BASE_SPEED + (elapsed / totalTime) * (customMaxSpeedVal - BASE_SPEED);
+            if (target > customMaxSpeedVal) target = customMaxSpeedVal;
+        } else target = customMaxSpeedVal;
+    }
+    speed += (target - speed) * 0.06 * dt * TARGET_FPS;
+    if (speed < BASE_SPEED) speed = BASE_SPEED;
+    timeScore += dt;
+    score = Math.floor(timeScore) + fuelScore;
+    scoreEl.textContent = score;
+    if (fuelMandatory) {
+        fuel -= FUEL_DRAIN_PER_SEC * dt;
+        if (fuel < 0) fuel = 0;
+        fuelFill.style.width = (fuel / MAX_FUEL * 100) + '%';
+        fuelWarning.style.display = fuel <= FUEL_WARNING ? 'block' : 'none';
+        if (fuel <= 0) { fuelEmpty = true; triggerGameOver('سوخت تمام شد!'); return; }
+    }
+    const moveScale = dt * TARGET_FPS;
+    const lerpFactor = 1 - Math.pow(1 - 0.25, moveScale);
+    if (leftCar) leftCar.x += (leftCar.targetX - leftCar.x) * lerpFactor;
+    if (rightCar) rightCar.x += (rightCar.targetX - rightCar.x) * lerpFactor;
+    trailAcc += dt;
+    const trailInterval = trailIntervalForQuality();
+    if (trailAcc >= trailInterval) {
+        trailAcc -= trailInterval;
+        if (leftCar) createTrail(leftCar);
+        if (rightCar) createTrail(rightCar);
+    }
+    if (gameMode !== 'classic') {
+        fuelSpawnAcc += dt;
+        if (fuelSpawnAcc >= 0.4667) { fuelSpawnAcc -= 0.4667; spawnFuel(); }
+    }
+    if (canSpawnWave()) spawnWave();
+    roadOffset += Math.max(speed, BASE_SPEED) * 54 * dt;
+    if (roadOffset >= 60) roadOffset %= 60;
+    animTime += dt;
+    const speedFactor = speed * TARGET_FPS;
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        let o = obstacles[i];
+        o.y += speedFactor * dt;
+        if (o.y > canvas.height + 100) { obstacles[i] = obstacles[obstacles.length-1]; obstacles.pop(); continue; }
+        const car = o.lane < 2 ? leftCar : rightCar;
+        if (car && rectCollide(car, o)) { createExplosion(car.x, car.y, car.color); triggerGameOver('برخورد با مانع!'); return; }
+    }
+    for (let i = fuels.length - 1; i >= 0; i--) {
+        let f = fuels[i];
+        f.y += speedFactor * dt;
+        f.rot += 3 * dt;
+        if (f.y > canvas.height + 50) { fuels[i] = fuels[fuels.length-1]; fuels.pop(); continue; }
+        const car = f.lane < 2 ? leftCar : rightCar;
+        if (car && fuelCollide(car, f)) {
+            fuelScore += 5;
+            if (fuelMandatory) { fuel = Math.min(MAX_FUEL, fuel + 20); fuelFill.style.width = (fuel/MAX_FUEL*100)+'%'; }
+            createParticles(f.x, f.y, '#ffd700', 10);
+            fuels[i] = fuels[fuels.length-1]; fuels.pop();
+        }
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx * moveScale; p.y += p.vy * moveScale;
+        p.life -= 1.2 * dt;
+        if (p.life <= 0) { particles[i] = particles[particles.length-1]; particles.pop(); }
+    }
+}
+function rectCollide(car, obs) {
+    return Math.abs(car.x - obs.x) < (carW + obs.w)/2 - 6 && Math.abs(car.y - obs.y) < (carH + obs.h)/2 - 6;
+}
+function fuelCollide(car, fuel) {
+    const dx = car.x - fuel.x, dy = car.y - fuel.y;
+    return Math.sqrt(dx*dx + dy*dy) < carW/2 + fuel.r;
+}
+
+const PARTICLE_POOL_SIZE = 260;
+const particlePool = [];
+for (let i = 0; i < PARTICLE_POOL_SIZE; i++) particlePool.push({ x:0,y:0,vx:0,vy:0,life:0,color:'#fff',size:1,length:1,type:'spark' });
+let particleCursor = 0;
+function acquireParticle() {
+    const p = particlePool[particleCursor];
+    particleCursor = (particleCursor + 1) % PARTICLE_POOL_SIZE;
+    return p;
+}
+function createParticles(x, y, color, count, type='spark') {
+    for (let i = 0; i < count; i++) {
+        const p = acquireParticle();
+        p.x = x; p.y = y;
+        p.vx = (Math.random()-0.5)*6; p.vy = (Math.random()-0.5)*6;
+        p.life = 1; p.color = color; p.size = Math.random()*4+2;
+        p.length = Math.random()*8+5; p.type = type;
+        particles.push(p);
+    }
+}
+function createTrail(car) {
+    const p = acquireParticle();
+    p.x = car.x + (Math.random()-0.5)*8;
+    p.y = car.y + carH/2 - 3;
+    p.vx = (Math.random()-0.5)*0.8; p.vy = Math.random()*2.4+1.4;
+    p.life = 0.56; p.color = car.color;
+    p.size = Math.random()*1.5+1.2;
+    p.length = Math.random()*7+6; p.type = 'trail';
+    particles.push(p);
+}
+function createExplosion(x, y, color) {
+    createParticles(x, y, color, 30);
+    createParticles(x, y, '#ffaa00', 15);
+    createParticles(x, y, '#ffffff', 10);
+}
+
+function draw() {
+    drawRoad();
+    if (!leftCar || !rightCar) return;
+    for (let f of fuels) drawEnergyCell(f);
+    for (let o of obstacles) drawHazard(o);
+    drawRacer(leftCar); drawRacer(rightCar);
+    drawParticles();
+}
+function drawRoad() {
+    const width = canvas.width, height = canvas.height;
+    ctx.save();
+    ctx.fillStyle = cachedBackdrop || '#050817';
+    ctx.fillRect(0, 0, width, height);
+    if (cachedHorizonGlow) { ctx.fillStyle = cachedHorizonGlow; ctx.fillRect(0, 0, width, height); }
+    ctx.fillStyle = '#09132c';
+    ctx.fillRect(8, 0, width-16, height);
+    ctx.fillStyle = 'rgba(255,90,120,0.035)';
+    ctx.fillRect(9, 0, laneWidth*2-9, height);
+    ctx.fillStyle = 'rgba(0,217,255,0.035)';
+    ctx.fillRect(laneWidth*2, 0, width-laneWidth*2-9, height);
+    ctx.fillStyle = 'rgba(255,255,255,0.018)';
+    for (let y = -60+roadOffset; y < height; y += 60) ctx.fillRect(10, y, width-20, 1);
+    ctx.lineCap = 'round';
+    for (const edge of [9, width-9]) {
+        ctx.strokeStyle = 'rgba(0,217,255,0.38)';
+        if (quality !== 'low') { ctx.shadowColor = '#00d9ff'; ctx.shadowBlur = 8; }
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(edge,0); ctx.lineTo(edge,height); ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    for (let i = 1; i < 4; i++) {
+        const x = i*laneWidth;
+        const centerLine = i === 2;
+        const lineColor = centerLine ? '#c77dff' : (i<2 ? '#ff6d8d' : '#3ce5ff');
+        const markerHeight = centerLine ? 28 : 19;
+        const markerWidth = centerLine ? 3 : 1.5;
+        ctx.fillStyle = lineColor;
+        if (quality !== 'low') { ctx.shadowColor = lineColor; ctx.shadowBlur = centerLine ? 10 : 5; }
+        for (let y = -60+roadOffset; y < height+60; y += 60) ctx.fillRect(x-markerWidth/2, y, markerWidth, markerHeight);
+    }
+    ctx.shadowBlur = 0;
+    if (quality === 'medium') {
+        if (scene === 'PLAYING' && Math.random() < 0.25) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 4; i++) {
+                const y = Math.random() * canvas.height;
+                ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
+            }
+        }
+        for (let i = 0; i < 14; i++) {
+            const y = ((i*83+roadOffset*1.35)%(height+80))-40;
+            const x = i%2===0 ? 20 : width-20;
+            ctx.fillStyle = i%3===0 ? 'rgba(255,209,102,0.6)' : 'rgba(0,217,255,0.42)';
+            ctx.fillRect(x-1, y, 2, 8+(i%3)*4);
+        }
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(0, 0, width, 2);
+    ctx.restore();
+}
+function drawHazard(o) {
+    const { w, h, color, phase, variant } = o;
+    const pulse = 0.72 + Math.sin(animTime*6.6+phase)*0.18;
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    ctx.rotate(Math.sin(animTime*3.6+phase)*0.025);
+    ctx.fillStyle = 'rgba(0,0,0,0.42)';
+    roundRect(-w/2+3, -h/2+5, w, h, 8);
+    ctx.fillStyle = '#050914';
+    roundRect(-w/2-2, -h*0.18, 6, h*0.4, 3);
+    roundRect(w/2-4, -h*0.18, 6, h*0.4, 3);
+    ctx.fillStyle = getCachedGradient('hazard:'+color, 0, -h/2, 0, h/2, [[0,'#28304b'],[0.55,'#10162a'],[1,'#080c1b']]);
+    ctx.beginPath();
+    ctx.moveTo(-w*0.29,-h/2); ctx.lineTo(w*0.29,-h/2);
+    ctx.lineTo(w*0.47,-h*0.24); ctx.lineTo(w*0.39,h*0.43);
+    ctx.lineTo(w*0.19,h/2); ctx.lineTo(-w*0.19,h/2);
+    ctx.lineTo(-w*0.39,h*0.43); ctx.lineTo(-w*0.47,-h*0.24);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = color;
+    if (quality !== 'low') { ctx.shadowColor = color; ctx.shadowBlur = 11*pulse; }
+    ctx.lineWidth = 1.4; ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(5,9,23,0.92)';
+    roundRect(-w*0.22, -h*0.25, w*0.44, h*0.32, 4);
+    ctx.fillStyle = color;
+    if (quality !== 'low') { ctx.shadowColor = color; ctx.shadowBlur = 9*pulse; }
+    roundRect(-3, -h*0.07, 6, h*0.28, 3);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = variant ? '#ffd166' : color;
+    ctx.lineWidth = 2;
+    for (let y = h*0.19; y < h*0.42; y += 9) {
+        ctx.beginPath();
+        ctx.moveTo(-w*0.22,y); ctx.lineTo(0,y+4); ctx.lineTo(w*0.22,y); ctx.stroke();
+    }
+    ctx.restore();
+}
+function drawEnergyCell(f) {
+    const pulse = 0.82 + Math.sin(animTime*7.2+f.phase)*0.18;
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.rot);
+    ctx.strokeStyle = 'rgba(0,217,255,0.45)';
+    if (quality !== 'low') { ctx.shadowColor = '#00d9ff'; ctx.shadowBlur = 12*pulse; }
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0,-21); ctx.lineTo(14,0); ctx.lineTo(0,21); ctx.lineTo(-14,0);
+    ctx.closePath(); ctx.stroke();
+    ctx.fillStyle = getCachedGradient('fuel-core', 0, -15, 0, 15, [[0,'#fff3b8'],[0.35,'#ffd166'],[1,'#d98121']]);
+    roundRect(-9,-14,18,28,5);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#071329';
+    roundRect(-5.5,-9.5,11,19,3);
+    ctx.fillStyle = '#6ef4ff';
+    for (let y = -7; y <= 5; y += 6) ctx.fillRect(-3.5, y, 7, 3);
+    ctx.restore();
+}
+function drawRacer(car) {
+    const accent = car.color;
+    const highlight = accent === '#e94560' ? '#ff9bae' : '#7eefff';
+    const steer = Math.max(-0.12, Math.min(0.12, (car.targetX-car.x)*0.018));
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    ctx.rotate(steer);
+    ctx.strokeStyle = accent;
+    if (quality !== 'low') { ctx.shadowColor = accent; ctx.shadowBlur = 15; }
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-9,carH/2-5); ctx.lineTo(-10,carH/2+12+Math.min(speed,9));
+    ctx.moveTo(9,carH/2-5); ctx.lineTo(10,carH/2+12+Math.min(speed,9));
+    ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath();
+    ctx.moveTo(-carW*0.27+3,-carH/2+5); ctx.lineTo(carW*0.27+3,-carH/2+5);
+    ctx.lineTo(carW*0.45+3,-carH*0.2+5); ctx.lineTo(carW*0.38+3,carH*0.39+5);
+    ctx.lineTo(carW*0.18+3,carH/2+5); ctx.lineTo(-carW*0.18+3,carH/2+5);
+    ctx.lineTo(-carW*0.38+3,carH*0.39+5); ctx.lineTo(-carW*0.45+3,-carH*0.2+5);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#050914';
+    roundRect(-carW/2-2,-20,6,18,3);
+    roundRect(carW/2-4,-20,6,18,3);
+    roundRect(-carW/2-2,7,6,18,3);
+    roundRect(carW/2-4,7,6,18,3);
+    ctx.fillStyle = getCachedGradient('car:'+accent, 0, -carH/2, 0, carH/2, [[0,highlight],[0.18,accent],[0.64,'#19243f'],[1,'#090e20']]);
+    ctx.beginPath();
+    ctx.moveTo(-carW*0.27,-carH/2); ctx.lineTo(carW*0.27,-carH/2);
+    ctx.lineTo(carW*0.45,-carH*0.2); ctx.lineTo(carW*0.38,carH*0.39);
+    ctx.lineTo(carW*0.18,carH/2); ctx.lineTo(-carW*0.18,carH/2);
+    ctx.lineTo(-carW*0.38,carH*0.39); ctx.lineTo(-carW*0.45,-carH*0.2);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = accent;
+    if (quality !== 'low') { ctx.shadowColor = accent; ctx.shadowBlur = 11; }
+    ctx.lineWidth = 1.5; ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(5,13,32,0.92)';
+    ctx.beginPath();
+    ctx.moveTo(-carW*0.22,-carH*0.22); ctx.lineTo(carW*0.22,-carH*0.22);
+    ctx.lineTo(carW*0.17,carH*0.15); ctx.lineTo(-carW*0.17,carH*0.15);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(160,232,255,0.32)';
+    ctx.fillRect(-carW*0.14,-carH*0.18,carW*0.28,5);
+    ctx.fillStyle = highlight;
+    if (quality !== 'low') { ctx.shadowColor = highlight; ctx.shadowBlur = 8; }
+    roundRect(-2,-carH*0.05,4,carH*0.38,2);
+    ctx.fillStyle = '#f8feff';
+    roundRect(-carW*0.27,-carH*0.39,8,4,2);
+    roundRect(carW*0.27-8,-carH*0.39,8,4,2);
+    ctx.fillStyle = accent;
+    roundRect(-carW*0.27,carH*0.39,8,4,2);
+    roundRect(carW*0.27-8,carH*0.39,8,4,2);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+function drawParticles() {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const glow = quality === 'medium';
+    for (let p of particles) {
+        ctx.globalAlpha = Math.max(0, p.life);
+        if (p.type === 'trail') {
+            ctx.strokeStyle = p.color;
+            if (glow) { ctx.shadowColor = p.color; ctx.shadowBlur = 8; }
+            ctx.lineWidth = p.size;
+            ctx.beginPath();
+            ctx.moveTo(p.x,p.y);
+            ctx.lineTo(p.x-p.vx*p.length, p.y-p.vy*p.length);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = p.color;
+            if (glow) { ctx.shadowColor = p.color; ctx.shadowBlur = 7; }
+            ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+        }
+        if (glow) ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+}
+function roundedPath(x,y,w,h,r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+}
+function roundRect(x,y,w,h,r) { roundedPath(x,y,w,h,r); ctx.fill(); }
+
+// ====== Scene Management ======
+function showScene(name) {
+    scene = name;
+    lobbyScreen.classList.toggle('active', name === 'LOBBY');
+    modeSelect.classList.toggle('active', name === 'MODESELECT');
+    settingsScreen.classList.toggle('active', name === 'SETTINGS');
+    statsScreen.classList.toggle('active', name === 'STATS');
+    leaderboardScreen.classList.toggle('active', name === 'LEADERBOARD');
+    pauseMenu.classList.toggle('active', name === 'PAUSED');
+    gameOverEl.classList.toggle('active', name === 'GAMEOVER');
+    const showScore = (name === 'PLAYING');
+    scoreEl.style.display = showScore ? 'block' : 'none';
+    if (name !== 'PLAYING') { fuelBar.style.display = 'none'; fuelWarning.style.display = 'none'; }
+    else if (fuelMandatory && gameMode === 'custom') fuelBar.style.display = 'block';
+    else fuelBar.style.display = 'none';
+}
+
+function startGame(mode) {
+    gameMode = mode;
+    lastPlayedMode = mode;
+    if (mode === 'custom') {
+        customMaxSpeedVal = parseFloat(customMaxSpeed.value) || 7;
+        customTimeToMaxVal = parseFloat(customTimeToMax.value) || 1.5;
+        const activeSeg = segmentedControls.querySelector('button.active');
+        controlMode = activeSeg ? activeSeg.dataset.value : 'classic';
+        fuelMandatory = customFuelToggle.classList.contains('on');
+    } else {
+        controlMode = 'classic';
+        fuelMandatory = false;
+    }
+    initGame();
+    showScene('PLAYING');
+}
+
+function togglePause() {
+    if (scene === 'PLAYING') { pauseStartTime = Date.now(); showScene('PAUSED'); }
+    else if (scene === 'PAUSED') { totalPausedTime += Date.now()-pauseStartTime; showScene('PLAYING'); }
+}
+
+async function triggerGameOver(reason) {
+    if (gameOverTriggered) return;
+    gameOverTriggered = true;
+    const finalScore = score;
+    const finalMode = gameMode;
+    const sessionStart = currentSessionStart;
+
+    // 1. نمایش سریع Game Over (بدون انتظار شبکه)
+    showGameOverScreen(finalScore, finalMode, false, []);
+
+    // 2. ارسال امتیاز به سرور (آنتی‌چیت فعال است)
+    try {
+        const result = await submitScore(finalScore, finalMode, sessionStart);
+        if (result.ok) {
+            // آپدیت playerData از پاسخ سرور
+            if (result.stats) {
+                playerData = {
+                    ...playerData,
+                    total_score: result.stats.total_score,
+                    high_score_classic: result.stats.high_score_classic,
+                    high_score_custom: result.stats.high_score_custom,
+                    games_classic: result.stats.games_classic,
+                    games_custom: result.stats.games_custom,
+                    cups: result.stats.cups,
+                };
+            }
+            // نمایش دقیق‌تر با داده‌های سرور
+            showGameOverScreen(finalScore, finalMode, result.newHigh, result.cupsAwarded || []);
+        }
+    } catch (err) {
+        console.error('Submit failed:', err);
+    }
+
+    // 3. رفرش داده‌های سرور در پس‌زمینه
+    await fetchPlayerData();
+    checkUsernameChangeAvailability();
+    updateStatsDisplay();
+}
+
+function showGameOverScreen(finalScore, finalMode, isNew, newCups) {
+    finalScoreEl.textContent = finalScore;
+    const stats = getCurrentStats();
+    finalHighScoreEl.textContent = finalMode === 'classic'
+        ? stats.classic.highScore
+        : stats.custom.highScore;
+    newRecordEl.style.display = isNew ? 'block' : 'none';
+
+    if (newCups && newCups.length > 0) {
+        const cupIcons = {
+            cup1: 'images/ui/cup1.png', cup2: 'images/ui/cup2.png', cup3: 'images/ui/cup3.png',
+            cup4: 'images/ui/cup4.png', cup5: 'images/ui/cup5.png'
+        };
+        gameOverCups.innerHTML = newCups.map(c =>
+            `<img src="${cupIcons[c] || 'images/ui/trophy.png'}" class="nr-icon" alt="">`
+        ).join('');
+        if (gameoverCupsSection) gameoverCupsSection.style.display = '';
+    } else {
+        gameOverCups.innerHTML = '';
+        if (gameoverCupsSection) gameoverCupsSection.style.display = 'none';
+    }
+
+    showScene('GAMEOVER');
+}
+
+function backToLobby() {
+    showScene('LOBBY');
+    updateStatsDisplay();
+    checkUsernameChangeAvailability();
+}
+
+// ====== Language System ======
+const LANG = {
+    fa: {
+        lobbyTitle: '2 Cars', lobbySub: 'از موانع دوری کن و دوام بیار!', lobbyHighScoreLabel: 'رکورد',
+        btnPlay: 'شروع بازی', btnStats: 'آمار', btnSettings: 'تنظیمات',
+        modeTitle: 'انتخاب حالت',
+        modeClassicTitle: 'کلاسیک', modeClassicDesc: 'همان بازی معمولی با افزایش تدریجی سرعت',
+        modeCustomTitle: 'سفارشی', modeCustomDesc: 'تنظیم سرعت، کنترل و سوخت',
+        customSpeedLabel: 'سرعت نهایی', customTimeLabel: 'زمان رسیدن (دقیقه)',
+        customControlLabel: 'کنترل', ctrlClassicLabel: 'کلاسیک', ctrlSimpleLabel: 'ساده',
+        customFuelLabel: 'سوخت اجباری', btnStartCustom: 'شروع سفارشی', btnBack: 'بازگشت',
+        statsTitle: 'آمار', statGamesLabel: 'بازی', statHighScoreLabel: 'امتیاز',
+        cupsLabel: 'کاپ‌ها', statsModeLabel: 'حالت کلاسیک', statsModeLabel2: 'حالت سفارشی',
+        settingsTitle: 'تنظیمات', settingsLangLabel: 'زبان', settingsQualityLabel: 'کیفیت گرافیک',
+        resetLabel: 'پاک کردن رکورد', backLabel: 'بازگشت',
+        pauseTitle: 'مکث', resumeLabel: 'ادامه بازی', lobbyLabel: 'لابی',
+        gameOverTitle: 'بازی تمام!', finalScoreLabel: 'امتیاز شما', finalHighScoreLabel: 'رکورد',
+        restartLabel: 'بازی مجدد', lobbyLabel2: 'لابی',
+        fuelWarning: 'سوخت کم!', newRecord: 'رکورد جدید!', loadingLabel: 'در حال دریافت پروفایل شما...',
+        firstNameTitle: 'نام بازیکن خود را انتخاب کنید', firstNameDescription: 'این نام در لیدربورد نمایش داده می‌شود.',
+        firstNamePlaceholder: 'نام بازیکن', firstNameSave: 'ثبت نام', firstNameSkip: 'رد کردن',
+        firstNameErrorEmpty: 'لطفاً یک نام وارد کنید.', firstNameErrorNetwork: 'ثبت نام انجام نشد. دوباره تلاش کنید.',
+        qualityAuto: 'خودکار', qualityMedium: 'متوسط', qualityLow: 'پایین',
+    },
+    en: {
+        lobbyTitle: '2 Cars', lobbySub: 'Dodge obstacles and survive!', lobbyHighScoreLabel: 'High Score',
+        btnPlay: 'Play', btnStats: 'Stats', btnSettings: 'Settings',
+        modeTitle: 'Select Mode',
+        modeClassicTitle: 'Classic', modeClassicDesc: 'Standard mode with gradual speed increase',
+        modeCustomTitle: 'Custom', modeCustomDesc: 'Speed, controls & fuel settings',
+        customSpeedLabel: 'Max Speed', customTimeLabel: 'Time to reach (min)',
+        customControlLabel: 'Controls', ctrlClassicLabel: 'Classic', ctrlSimpleLabel: 'Simple',
+        customFuelLabel: 'Mandatory Fuel', btnStartCustom: 'Start Custom', btnBack: 'Back',
+        statsTitle: 'Stats', statGamesLabel: 'Games', statHighScoreLabel: 'Score',
+        cupsLabel: 'Cups', statsModeLabel: 'Classic', statsModeLabel2: 'Custom',
+        settingsTitle: 'Settings', settingsLangLabel: 'Language', settingsQualityLabel: 'Graphics Quality',
+        resetLabel: 'Reset Record', backLabel: 'Back',
+        pauseTitle: 'Paused', resumeLabel: 'Resume', lobbyLabel: 'Lobby',
+        gameOverTitle: 'Game Over!', finalScoreLabel: 'Your Score', finalHighScoreLabel: 'High Score',
+        restartLabel: 'Play Again', lobbyLabel2: 'Lobby',
+        fuelWarning: 'Low fuel!', newRecord: 'New record!', loadingLabel: 'Loading your profile...',
+        firstNameTitle: 'Choose your player name', firstNameDescription: 'This name appears on the leaderboard.',
+        firstNamePlaceholder: 'Player name', firstNameSave: 'Save', firstNameSkip: 'Skip',
+        firstNameErrorEmpty: 'Enter a player name.', firstNameErrorNetwork: 'Could not save your name. Try again.',
+        qualityAuto: 'Auto', qualityMedium: 'Medium', qualityLow: 'Low',
+    }
+};
+
+let currentLang = localStorage.getItem('lang') || 'en';
+function t(key) { return LANG[currentLang][key] || key; }
+
+function updateQualitySelectLabels() {
+    const labels = { auto: t('qualityAuto'), medium: t('qualityMedium'), low: t('qualityLow') };
+    qualitySelectContainer.querySelectorAll('.select-option').forEach((option) => {
+        option.textContent = labels[option.dataset.value];
+    });
+}
+
+function syncCustomSelect(container, value) {
+    const option = container.querySelector(`.select-option[data-value="${value}"]`);
+    if (!option) return;
+    container.querySelectorAll('.select-option').forEach((item) => item.classList.toggle('active', item === option));
+    container.querySelector('.selected-label').textContent = option.textContent;
+}
+
+function setupCustomSelect(container) {
+    const trigger = container.querySelector('.select-trigger');
+    const options = container.querySelectorAll('.select-option');
+    trigger.addEventListener('click', (event) => {
+        event.stopPropagation();
+        container.classList.toggle('open');
+    });
+    options.forEach((option) => option.addEventListener('click', (event) => {
+        event.stopPropagation();
+        syncCustomSelect(container, option.dataset.value);
+        container.classList.remove('open');
+        container.dispatchEvent(new CustomEvent('select-change', { detail: { value: option.dataset.value } }));
+    }));
+    document.addEventListener('click', (event) => {
+        if (!container.contains(event.target)) container.classList.remove('open');
+    });
+}
+
+function updateUI() {
+    document.documentElement.lang = currentLang;
+    document.documentElement.dir = currentLang === 'fa' ? 'rtl' : 'ltr';
+    bootLoaderLabel.textContent = t('loadingLabel');
+    document.getElementById('firstNameTitle').textContent = t('firstNameTitle');
+    document.getElementById('firstNameDescription').textContent = t('firstNameDescription');
+    firstNameInput.placeholder = t('firstNamePlaceholder');
+    firstNameSaveBtn.textContent = t('firstNameSave');
+    firstNameSkipBtn.textContent = t('firstNameSkip');
+    document.getElementById('lobbyTitle').textContent = t('lobbyTitle');
+    document.getElementById('lobbySub').textContent = t('lobbySub');
+    document.getElementById('lobbyHighScoreLabel').textContent = t('lobbyHighScoreLabel');
+    document.getElementById('btnPlayLabel').textContent = t('btnPlay');
+    document.getElementById('btnStatsLabel').textContent = t('btnStats');
+    document.getElementById('btnSettingsLabel').textContent = t('btnSettings');
+    document.getElementById('modeTitle').textContent = t('modeTitle');
+    document.getElementById('modeClassicTitle').textContent = t('modeClassicTitle');
+    document.getElementById('modeClassicDesc').textContent = t('modeClassicDesc');
+    document.getElementById('modeCustomTitle').textContent = t('modeCustomTitle');
+    document.getElementById('modeCustomDesc').textContent = t('modeCustomDesc');
+    document.getElementById('customSpeedLabel').textContent = t('customSpeedLabel');
+    document.getElementById('customTimeLabel').textContent = t('customTimeLabel');
+    document.getElementById('customControlLabel').textContent = t('customControlLabel');
+    document.getElementById('ctrlClassicBtn').textContent = t('ctrlClassicLabel');
+    document.getElementById('ctrlSimpleBtn').textContent = t('ctrlSimpleLabel');
+    document.getElementById('customFuelLabel').textContent = t('customFuelLabel');
+    btnStartCustom.lastChild.textContent = ` ${t('btnStartCustom')}`;
+    document.getElementById('btnBackLobbyLabel').textContent = t('btnBack');
+    document.getElementById('btnCloseCustomLabel').textContent = t('btnBack');
+    document.getElementById('statsTitle').textContent = t('statsTitle');
+    document.getElementById('statGamesLabel').textContent = t('statGamesLabel');
+    document.getElementById('statHighScoreLabel').textContent = t('statHighScoreLabel');
+    document.getElementById('statGamesLabel2').textContent = t('statGamesLabel');
+    document.getElementById('statHighScoreLabel2').textContent = t('statHighScoreLabel');
+    document.getElementById('cupsLabel').textContent = t('cupsLabel');
+    document.getElementById('statsModeLabel').textContent = t('statsModeLabel');
+    document.getElementById('statsModeLabel2').textContent = t('statsModeLabel2');
+    document.getElementById('btnBackStatsLabel').textContent = t('btnBack');
+    document.getElementById('settingsTitle').textContent = t('settingsTitle');
+    document.getElementById('settingsLangLabel').textContent = t('settingsLangLabel');
+    document.getElementById('settingsQualityLabel').textContent = t('settingsQualityLabel');
+    document.getElementById('resetLabel').textContent = t('resetLabel');
+    document.getElementById('backLabel').textContent = t('backLabel');
+    document.getElementById('pauseTitle').textContent = t('pauseTitle');
+    document.getElementById('resumeLabel').textContent = t('resumeLabel');
+    document.getElementById('lobbyLabel').textContent = t('lobbyLabel');
+    document.getElementById('gameOverTitle').textContent = t('gameOverTitle');
+    newRecordEl.textContent = t('newRecord');
+    document.getElementById('finalScoreLabel').textContent = t('finalScoreLabel');
+    document.getElementById('finalHighScoreLabel').textContent = t('finalHighScoreLabel');
+    document.getElementById('restartLabel').textContent = t('restartLabel');
+    document.getElementById('lobbyLabel2').textContent = t('lobbyLabel2');
+    document.getElementById('gameOverCupsLabel').textContent = t('cupsLabel');
+    fuelWarning.textContent = t('fuelWarning');
+    updateQualitySelectLabels();
+    syncCustomSelect(langSelectContainer, currentLang);
+    syncCustomSelect(qualitySelectContainer, qualityMode);
+}
+
+// ====== Event Listeners ======
+firstNameSaveBtn.addEventListener('click', saveFirstName);
+firstNameSkipBtn.addEventListener('click', closeFirstNameIntro);
+firstNameInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') saveFirstName();
+});
+btnPlay.addEventListener('click', () => { showScene('MODESELECT'); setCustomSettingsOpen(false); });
+modeClassic.addEventListener('click', () => startGame('classic'));
+modeCustom.addEventListener('click', () => setCustomSettingsOpen(true));
+btnCloseCustom.addEventListener('click', () => setCustomSettingsOpen(false));
+btnStartCustom.addEventListener('click', () => { setCustomSettingsOpen(false); startGame('custom'); });
+btnBackLobby.addEventListener('click', backToLobby);
+btnStats.addEventListener('click', async () => { await updateStatsDisplay(); showScene('STATS'); });
+btnBackStats.addEventListener('click', backToLobby);
+btnRestart.addEventListener('click', () => {
+    if (gameMode === 'classic') startGame('classic');
+    else startGame('custom');
+});
+btnResume.addEventListener('click', togglePause);
+btnLobbyPause.addEventListener('click', backToLobby);
+btnLobbyOver.addEventListener('click', backToLobby);
+btnLeaderboardLobby.addEventListener('click', async () => {
+    showScene('LEADERBOARD');
+    renderLeaderboard('lbClassicMain', await fetchLeaderboard('classic', 10));
+});
+btnBackLeaderboard.addEventListener('click', () => showScene('LOBBY'));
+btnSettingsLobby.addEventListener('click', () => { previousScene = scene; showScene('SETTINGS'); });
+btnBackSettings.addEventListener('click', () => {
+    showScene(previousScene || 'LOBBY');
+});
+btnResetScore.addEventListener('click', () => {
+    if (confirm(t('resetLabel') + '؟')) {
+        // پاک کردن فقط آمار محلی - سرور دست‌نخورده باقی می‌مونه
+        localStorage.removeItem('twoCars_stats_v4');
+        updateStatsDisplay();
+    }
+});
+setupCustomSelect(langSelectContainer);
+setupCustomSelect(qualitySelectContainer);
+langSelectContainer.addEventListener('select-change', (e) => {
+    currentLang = e.detail.value;
+    localStorage.setItem('lang', currentLang);
+    updateUI();
+    updateStatsDisplay();
+});
+qualitySelectContainer.addEventListener('select-change', (e) => {
+    qualityMode = e.detail.value;
+    quality = qualityMode === 'auto' ? 'medium' : qualityMode;
+    saveQualityPref();
+});
+
+// Stepper buttons
+document.querySelectorAll('.stepper-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.dataset.target;
+        const dir = parseFloat(this.dataset.dir);
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        let val = parseFloat(input.value) || 0;
+        const step = parseFloat(input.step) || 1;
+        const min = parseFloat(input.min);
+        const max = parseFloat(input.max);
+        val = Math.min(max, Math.max(min, val + dir * step));
+        const precision = String(step).split('.')[1]?.length || 0;
+        val = parseFloat(val.toFixed(precision));
+        input.value = val;
+    });
+});
+segmentedControls.addEventListener('click', function(e) {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    this.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+});
+customFuelToggle.addEventListener('click', function() {
+    this.classList.toggle('on');
+    this.setAttribute('aria-checked', this.classList.contains('on') ? 'true' : 'false');
+});
+function setCustomSettingsOpen(isOpen) {
+    customSettings.classList.toggle('active', Boolean(isOpen));
+    modeCustom.setAttribute('aria-expanded', String(Boolean(isOpen)));
+    customSettings.setAttribute('aria-hidden', String(!isOpen));
+    modeSelect.classList.toggle('custom-open', Boolean(isOpen));
+    modeSelectMain.setAttribute('aria-hidden', String(isOpen));
+}
+
+// Keyboard
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (scene === 'PLAYING') togglePause();
+        else if (scene === 'PAUSED') togglePause();
+        else if (scene === 'SETTINGS') {
+            showScene(previousScene || 'LOBBY');
+        } else if (scene === 'STATS') backToLobby();
+        return;
+    }
+    if (scene !== 'PLAYING' || gameOverTriggered) return;
+    const left = leftCar, right = rightCar;
+    if (!left || !right) return;
+    if (controlMode === 'classic') {
+        if ((e.key === 'a' || e.key === 'A') && left.lane === 1) { left.lane = 0; left.targetX = getLaneCenter(0); }
+        else if ((e.key === 'd' || e.key === 'D') && left.lane === 0) { left.lane = 1; left.targetX = getLaneCenter(1); }
+        if (e.key === 'ArrowLeft' && right.lane === 3) { right.lane = 2; right.targetX = getLaneCenter(2); }
+        else if (e.key === 'ArrowRight' && right.lane === 2) { right.lane = 3; right.targetX = getLaneCenter(3); }
+    } else {
+        if (e.key === 'ArrowLeft') { left.lane = left.lane === 0 ? 1 : 0; left.targetX = getLaneCenter(left.lane); }
+        else if (e.key === 'ArrowRight') { right.lane = right.lane === 2 ? 3 : 2; right.targetX = getLaneCenter(right.lane); }
+    }
+});
+canvas.addEventListener('pointerdown', (e) => {
+    if (scene !== 'PLAYING' || gameOverTriggered) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if (x < canvas.width/2) {
+        leftCar.lane = leftCar.lane === 0 ? 1 : 0;
+        leftCar.targetX = getLaneCenter(leftCar.lane);
+    } else {
+        rightCar.lane = rightCar.lane === 2 ? 3 : 2;
+        rightCar.targetX = getLaneCenter(rightCar.lane);
+    }
+});
+
+// ====== Game Loop ======
+let lastFrameTime = 0;
+function gameLoop(timestamp) {
+    if (!lastFrameTime) lastFrameTime = timestamp;
+    let dt = (timestamp - lastFrameTime) / 1000;
+    if (dt > 0.1) dt = 0.1;
+    lastFrameTime = timestamp;
+    trackAdaptiveQuality(dt);
+    update(dt);
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// ====== Init ======
+loadQualityPref();
+resize();
+initGame();
+updateUI();
+
+// Initial server-side player data load.
+(async function initApp() {
+    // اگه player وجود نداره، با username پیش‌فرض register کن
+    const hasPlayer = await fetchPlayerData();
+    if (!hasPlayer) {
+        await registerOrUpdatePlayer('player');
+    }
+    checkUsernameChangeAvailability();
+    updateStatsDisplay();
+    updateUI();
+    showScene('LOBBY');
+    if (shouldShowFirstNameIntro()) openFirstNameIntro();
+    finishBootLoading();
+    requestAnimationFrame(gameLoop);
+})();
+    </script>
+</body>
+</html>
