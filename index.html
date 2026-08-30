@@ -130,6 +130,21 @@
         .first-name-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; inline-size: 100%; }
         .first-name-actions .menu-btn { inline-size: 100%; margin: 0; padding: 10px 12px; font-size: 13px; }
 
+        /* Account / Sign up-in modal (reuses first-name-card look) */
+        #accountModal { z-index: 85; background: rgba(4, 9, 27, 0.55); backdrop-filter: blur(5px); }
+        .account-card { inline-size: min(100%, 340px); max-height: 92vh; overflow-y: auto; }
+        .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; inline-size: 100%; background: rgba(2,9,28,0.5); border: 1px solid rgba(0,217,255,0.25); border-radius: 12px; padding: 4px; }
+        .auth-tab { border: none; background: transparent; color: rgba(220,234,255,0.65); font-weight: 700; font-size: 13px; padding: 9px 6px; border-radius: 9px; cursor: pointer; transition: all .18s; }
+        .auth-tab.active { background: linear-gradient(145deg, rgba(0,217,255,0.28), rgba(199,125,255,0.18)); color: #fff; box-shadow: 0 0 14px rgba(0,217,255,0.18); }
+        .auth-form { display: grid; gap: 10px; inline-size: 100%; }
+        .auth-form.hidden { display: none; }
+        .account-view.hidden, .auth-tabs.hidden, #accountLinkBtn.hidden { display: none; }
+        .account-view { display: grid; justify-items: center; gap: 12px; inline-size: 100%; }
+        .account-email { font-size: 14px; font-weight: 700; color: #f8fcff; word-break: break-all; text-align: center; }
+        .account-badge { font-size: 11px; color: rgba(220,234,255,0.6); background: rgba(0,217,255,0.1); border: 1px solid rgba(0,217,255,0.25); border-radius: 999px; padding: 4px 12px; }
+        .account-close { position: absolute; top: 10px; inset-inline-end: 12px; background: none; border: none; color: rgba(220,234,255,0.55); font-size: 20px; cursor: pointer; line-height: 1; padding: 4px; }
+        .account-close:hover { color: #fff; }
+
         .app-loader {
             position: absolute;
             inset: 0;
@@ -1785,6 +1800,9 @@
                     <button class="lb-btn-square" id="btnLeaderboardLobby" title="Leaderboard">
                         <img src="images/ui/leaderboard.png" alt="Leaderboard">
                     </button>
+                    <button class="lb-btn-square" id="btnAccountLobby" title="Account">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00d9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </button>
                 </div>
             </section>
         </div>
@@ -2043,6 +2061,46 @@
             </section>
         </div>
 
+        <!-- Account: Sign Up / Sign In / logged-in panel -->
+        <div id="accountModal" class="overlay" aria-hidden="true">
+            <section class="first-name-card account-card" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
+                <button class="account-close" id="accountCloseBtn" type="button" aria-label="close">×</button>
+                <div class="first-name-mark"><img src="images/ui/username.png" alt=""></div>
+                <h2 id="accountTitle">حساب کاربری</h2>
+
+                <!-- Sign in / Sign up tabs (shown when logged OUT) -->
+                <div class="auth-tabs" id="authTabs">
+                    <button class="auth-tab active" id="tabSignIn" type="button">ورود</button>
+                    <button class="auth-tab" id="tabSignUp" type="button">ثبت‌نام</button>
+                </div>
+
+                <!-- Sign In form -->
+                <form class="auth-form" id="signInForm">
+                    <input type="email" id="signInEmail" placeholder="ایمیل" autocomplete="email" required>
+                    <input type="password" id="signInPassword" placeholder="رمز عبور" autocomplete="current-password" required>
+                    <div class="first-name-error" id="signInError" aria-live="polite"></div>
+                    <button class="menu-btn btn-play" id="signInSubmitBtn" type="submit" style="width:100%;margin:0;">ورود</button>
+                </form>
+
+                <!-- Sign Up form -->
+                <form class="auth-form hidden" id="signUpForm">
+                    <input type="text" id="signUpUsername" maxlength="15" placeholder="نام بازیکن" autocomplete="off">
+                    <input type="email" id="signUpEmail" placeholder="ایمیل" autocomplete="email" required>
+                    <input type="password" id="signUpPassword" placeholder="رمز عبور (حداقل ۸ کاراکتر)" autocomplete="new-password" required minlength="8">
+                    <div class="first-name-error" id="signUpError" aria-live="polite"></div>
+                    <button class="menu-btn btn-play" id="signUpSubmitBtn" type="submit" style="width:100%;margin:0;">ساخت حساب</button>
+                </form>
+
+                <!-- Logged-in view -->
+                <div class="account-view hidden" id="accountLoggedInView">
+                    <div class="account-badge" id="accountBadge">حساب متصل</div>
+                    <div class="account-email" id="accountEmailLabel"></div>
+                    <button class="menu-btn btn-play" id="accountLinkBtn" type="button" style="width:100%;margin:0;">اتصال پیشرفت این دستگاه</button>
+                    <button class="menu-btn btn-back" id="accountLogoutBtn" type="button" style="width:100%;margin:0;">خروج از حساب</button>
+                </div>
+            </section>
+        </div>
+
         <!-- Toast Notification -->
         <div id="toastNotification" class="toast"></div>
     </div>
@@ -2052,6 +2110,29 @@
 // ============================================================
 
 const API_BASE = '/api/game';
+const AUTH_API_BASE = '/api/auth';
+
+// ====== Auth state ======
+let authToken = localStorage.getItem('authToken') || '';
+let authEmail = localStorage.getItem('authEmail') || '';
+
+function isLoggedIn() { return Boolean(authToken); }
+
+function authHeaders() {
+    return authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
+}
+
+function setAuthSession(token, email) {
+    authToken = token || '';
+    authEmail = email || '';
+    if (authToken) {
+        localStorage.setItem('authToken', authToken);
+        localStorage.setItem('authEmail', authEmail);
+    } else {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('authEmail');
+    }
+}
 
 // ====== DOM references ======
 const bootLoader = document.getElementById('bootLoader');
@@ -2061,6 +2142,27 @@ const firstNameInput = document.getElementById('firstNameInput');
 const firstNameError = document.getElementById('firstNameError');
 const firstNameSaveBtn = document.getElementById('firstNameSaveBtn');
 const firstNameSkipBtn = document.getElementById('firstNameSkipBtn');
+const btnAccountLobby = document.getElementById('btnAccountLobby');
+const accountModal = document.getElementById('accountModal');
+const accountCloseBtn = document.getElementById('accountCloseBtn');
+const authTabs = document.getElementById('authTabs');
+const tabSignIn = document.getElementById('tabSignIn');
+const tabSignUp = document.getElementById('tabSignUp');
+const signInForm = document.getElementById('signInForm');
+const signUpForm = document.getElementById('signUpForm');
+const signInEmail = document.getElementById('signInEmail');
+const signInPassword = document.getElementById('signInPassword');
+const signInError = document.getElementById('signInError');
+const signInSubmitBtn = document.getElementById('signInSubmitBtn');
+const signUpUsername = document.getElementById('signUpUsername');
+const signUpEmail = document.getElementById('signUpEmail');
+const signUpPassword = document.getElementById('signUpPassword');
+const signUpError = document.getElementById('signUpError');
+const signUpSubmitBtn = document.getElementById('signUpSubmitBtn');
+const accountLoggedInView = document.getElementById('accountLoggedInView');
+const accountEmailLabel = document.getElementById('accountEmailLabel');
+const accountLinkBtn = document.getElementById('accountLinkBtn');
+const accountLogoutBtn = document.getElementById('accountLogoutBtn');
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
@@ -2190,7 +2292,7 @@ async function fetchPlayerData() {
     try {
         const deviceId = getDeviceId();
         const url = `${API_BASE}/me?deviceId=${encodeURIComponent(deviceId)}`;
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: authHeaders() });
         const data = await response.json();
         if (data.ok) {
             playerData = data.player;
@@ -2208,7 +2310,7 @@ async function registerOrUpdatePlayer(username) {
     try {
         const deviceId = getDeviceId();
         const url = `${API_BASE}/register?username=${encodeURIComponent(username)}&deviceId=${encodeURIComponent(deviceId)}`;
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: authHeaders() });
         const data = await response.json();
         if (data.ok) {
             localStorage.setItem('playerName', data.username);
@@ -2226,7 +2328,7 @@ async function changeUsername(newUsername) {
     try {
         const deviceId = getDeviceId();
         const url = `${API_BASE}/change-name?username=${encodeURIComponent(newUsername)}&deviceId=${encodeURIComponent(deviceId)}`;
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: authHeaders() });
         const data = await response.json();
         if (data.ok) {
             localStorage.setItem('playerName', data.username);
@@ -2243,7 +2345,7 @@ async function submitScore(score, mode, sessionStart) {
     try {
         const deviceId = getDeviceId();
         const url = `${API_BASE}/submit?deviceId=${encodeURIComponent(deviceId)}&score=${score}&mode=${mode}&sessionStart=${sessionStart}`;
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: authHeaders() });
         return await response.json();
     } catch (err) {
         console.error('Submit error:', err);
@@ -2279,6 +2381,174 @@ async function fetchLeaderboard(mode, limit = 10) {
     }
 }
 
+// ====== Auth: Sign Up / Sign In / Sign Out / Link Device ======
+async function signUp(email, password, username) {
+    try {
+        const response = await fetch(`${AUTH_API_BASE}/signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, username, deviceId: getDeviceId() }),
+        });
+        const data = await response.json();
+        if (data.ok) {
+            setAuthSession(data.token, email);
+            playerData = data.player;
+            localStorage.setItem('playerName', playerData.username);
+        }
+        return data;
+    } catch (err) {
+        console.error('Signup error:', err);
+        return { ok: false, error: 'network' };
+    }
+}
+
+async function signIn(email, password) {
+    try {
+        const response = await fetch(`${AUTH_API_BASE}/signin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+        });
+        const data = await response.json();
+        if (data.ok) {
+            setAuthSession(data.token, email);
+            playerData = data.player;
+            localStorage.setItem('playerName', playerData.username);
+        }
+        return data;
+    } catch (err) {
+        console.error('Signin error:', err);
+        return { ok: false, error: 'network' };
+    }
+}
+
+function signOut() {
+    setAuthSession('', '');
+    closeAccountModal();
+    fetchPlayerData().then(() => {
+        updateStatsDisplay();
+        checkUsernameChangeAvailability();
+        lobbyUsernameInput.value = playerData ? playerData.username : (localStorage.getItem('playerName') || 'player');
+        showToast(currentLang === 'fa' ? 'از حساب خارج شدید' : 'Signed out');
+    });
+}
+
+async function linkDeviceToAccount() {
+    if (!isLoggedIn()) return;
+    try {
+        accountLinkBtn.disabled = true;
+        const response = await fetch(`${AUTH_API_BASE}/link-device`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({ deviceId: getDeviceId() }),
+        });
+        const data = await response.json();
+        if (data.ok) {
+            showToast(currentLang === 'fa' ? 'پیشرفت این دستگاه متصل شد' : 'Device progress linked');
+            await fetchPlayerData();
+            updateStatsDisplay();
+        } else {
+            showToast(currentLang === 'fa' ? 'چیزی برای اتصال پیدا نشد' : 'Nothing to link on this device');
+        }
+    } catch (err) {
+        showToast(currentLang === 'fa' ? 'خطای شبکه' : 'Network error');
+    } finally {
+        accountLinkBtn.disabled = false;
+    }
+}
+
+// ====== Account modal UI ======
+function renderAccountModal() {
+    if (isLoggedIn()) {
+        authTabs.classList.add('hidden');
+        signInForm.classList.add('hidden');
+        signUpForm.classList.add('hidden');
+        accountLoggedInView.classList.remove('hidden');
+        accountEmailLabel.textContent = authEmail;
+    } else {
+        authTabs.classList.remove('hidden');
+        accountLoggedInView.classList.add('hidden');
+        setAuthTab('signin');
+    }
+}
+
+function setAuthTab(which) {
+    const isSignIn = which === 'signin';
+    tabSignIn.classList.toggle('active', isSignIn);
+    tabSignUp.classList.toggle('active', !isSignIn);
+    signInForm.classList.toggle('hidden', !isSignIn);
+    signUpForm.classList.toggle('hidden', isSignIn);
+    signInError.textContent = '';
+    signUpError.textContent = '';
+}
+
+function openAccountModal() {
+    renderAccountModal();
+    accountModal.classList.add('active');
+    accountModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeAccountModal() {
+    accountModal.classList.remove('active');
+    accountModal.setAttribute('aria-hidden', 'true');
+}
+
+btnAccountLobby.addEventListener('click', openAccountModal);
+accountCloseBtn.addEventListener('click', closeAccountModal);
+accountModal.addEventListener('click', (e) => { if (e.target === accountModal) closeAccountModal(); });
+tabSignIn.addEventListener('click', () => setAuthTab('signin'));
+tabSignUp.addEventListener('click', () => setAuthTab('signup'));
+accountLogoutBtn.addEventListener('click', signOut);
+accountLinkBtn.addEventListener('click', linkDeviceToAccount);
+
+signInForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = signInEmail.value.trim();
+    const password = signInPassword.value;
+    signInError.textContent = '';
+    signInSubmitBtn.disabled = true;
+    const result = await signIn(email, password);
+    signInSubmitBtn.disabled = false;
+    if (result.ok) {
+        signInPassword.value = '';
+        closeAccountModal();
+        updateStatsDisplay();
+        checkUsernameChangeAvailability();
+        lobbyUsernameInput.value = playerData.username;
+        showToast(currentLang === 'fa' ? 'خوش آمدید!' : 'Welcome back!');
+    } else {
+        signInError.textContent = currentLang === 'fa' ? 'ایمیل یا رمز عبور اشتباه است.' : 'Invalid email or password.';
+    }
+});
+
+signUpForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = signUpUsername.value.trim();
+    const email = signUpEmail.value.trim();
+    const password = signUpPassword.value;
+    signUpError.textContent = '';
+    if (password.length < 8) {
+        signUpError.textContent = currentLang === 'fa' ? 'رمز عبور باید حداقل ۸ کاراکتر باشد.' : 'Password must be at least 8 characters.';
+        return;
+    }
+    signUpSubmitBtn.disabled = true;
+    const result = await signUp(email, password, username);
+    signUpSubmitBtn.disabled = false;
+    if (result.ok) {
+        signUpPassword.value = '';
+        closeAccountModal();
+        updateStatsDisplay();
+        checkUsernameChangeAvailability();
+        lobbyUsernameInput.value = playerData.username;
+        showToast(currentLang === 'fa' ? 'حساب شما ساخته شد!' : 'Account created!');
+    } else {
+        const msg = result.error === 'email already registered'
+            ? (currentLang === 'fa' ? 'این ایمیل قبلاً ثبت شده است.' : 'This email is already registered.')
+            : (currentLang === 'fa' ? 'ثبت‌نام انجام نشد. اطلاعات را بررسی کنید.' : 'Signup failed. Check your details.');
+        signUpError.textContent = msg;
+    }
+});
+
 function renderLeaderboard(containerId, result, mode = 'classic') {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -2306,6 +2576,7 @@ function renderLeaderboard(containerId, result, mode = 'classic') {
     }
 
     const playerName = (playerData?.username || localStorage.getItem('playerName') || '').trim().toLowerCase();
+    let mineMarked = false;
     const header = `
         <div class="lb-entry lb-header" aria-hidden="true">
             <span class="lb-rank">${t('leaderboardRank')}</span>
@@ -2320,7 +2591,8 @@ function renderLeaderboard(containerId, result, mode = 'classic') {
         }[char]));
         const numericScore = Number(entry.score);
         const score = Number.isFinite(numericScore) ? numericScore : 0;
-        const isMine = playerName && name.trim().toLowerCase() === playerName;
+        const isMine = !mineMarked && playerName && name.trim().toLowerCase() === playerName;
+        if (isMine) mineMarked = true;
         return `
             <div class="lb-entry ${isMine ? 'lb-mine' : ''}">
                 <span class="lb-rank">#${i + 1}</span>
@@ -3086,6 +3358,10 @@ const LANG = {
         firstNameErrorEmpty: 'لطفاً یک نام وارد کنید.', firstNameErrorNetwork: 'ثبت نام انجام نشد. دوباره تلاش کنید.',
         leaderboardTitle: 'لیدربورد', leaderboardModeLabel: 'حالت کلاسیک', leaderboardRank: 'رتبه', leaderboardPlayer: 'بازیکن', leaderboardScore: 'امتیاز', leaderboardEmpty: 'هنوز امتیازی ثبت نشده', leaderboardLoading: 'در حال دریافت رتبه‌ها...', leaderboardError: 'دریافت لیدربورد انجام نشد.', leaderboardErrorHint: 'اتصال اینترنت یا سرور را بررسی کنید.', leaderboardRetry: 'تلاش مجدد', btnBackLeaderboard: 'بازگشت',
         qualityAuto: 'خودکار', qualityMedium: 'متوسط', qualityLow: 'پایین',
+        accountTitle: 'حساب کاربری', tabSignIn: 'ورود', tabSignUp: 'ثبت‌نام',
+        signInEmailPh: 'ایمیل', signInPasswordPh: 'رمز عبور', signInSubmit: 'ورود',
+        signUpUsernamePh: 'نام بازیکن', signUpEmailPh: 'ایمیل', signUpPasswordPh: 'رمز عبور (حداقل ۸ کاراکتر)', signUpSubmit: 'ساخت حساب',
+        accountBadge: 'حساب متصل', accountLink: 'اتصال پیشرفت این دستگاه', accountLogout: 'خروج از حساب',
     },
     en: {
         lobbyTitle: '2 Cars', lobbySub: 'Dodge obstacles and survive!', lobbyHighScoreLabel: 'High Score',
@@ -3109,6 +3385,10 @@ const LANG = {
         firstNameErrorEmpty: 'Enter a player name.', firstNameErrorNetwork: 'Could not save your name. Try again.',
         leaderboardTitle: 'Leaderboard', leaderboardModeLabel: 'Classic Mode', leaderboardRank: 'Rank', leaderboardPlayer: 'Player', leaderboardScore: 'Score', leaderboardEmpty: 'No scores yet', leaderboardLoading: 'Loading leaderboard...', leaderboardError: 'Could not load leaderboard.', leaderboardErrorHint: 'Check your connection or server.', leaderboardRetry: 'Retry', btnBackLeaderboard: 'Back',
         qualityAuto: 'Auto', qualityMedium: 'Medium', qualityLow: 'Low',
+        accountTitle: 'Account', tabSignIn: 'Sign In', tabSignUp: 'Sign Up',
+        signInEmailPh: 'Email', signInPasswordPh: 'Password', signInSubmit: 'Sign In',
+        signUpUsernamePh: 'Player name', signUpEmailPh: 'Email', signUpPasswordPh: 'Password (min 8 chars)', signUpSubmit: 'Create Account',
+        accountBadge: 'Account linked', accountLink: 'Link this device\'s progress', accountLogout: 'Sign out',
     }
 };
 
@@ -3156,6 +3436,19 @@ function updateUI() {
     firstNameInput.placeholder = t('firstNamePlaceholder');
     firstNameSaveBtn.textContent = t('firstNameSave');
     firstNameSkipBtn.textContent = t('firstNameSkip');
+    document.getElementById('accountTitle').textContent = t('accountTitle');
+    tabSignIn.textContent = t('tabSignIn');
+    tabSignUp.textContent = t('tabSignUp');
+    signInEmail.placeholder = t('signInEmailPh');
+    signInPassword.placeholder = t('signInPasswordPh');
+    signInSubmitBtn.textContent = t('signInSubmit');
+    signUpUsername.placeholder = t('signUpUsernamePh');
+    signUpEmail.placeholder = t('signUpEmailPh');
+    signUpPassword.placeholder = t('signUpPasswordPh');
+    signUpSubmitBtn.textContent = t('signUpSubmit');
+    document.getElementById('accountBadge').textContent = t('accountBadge');
+    accountLinkBtn.textContent = t('accountLink');
+    accountLogoutBtn.textContent = t('accountLogout');
     document.getElementById('lobbyTitle').textContent = t('lobbyTitle');
     document.getElementById('lobbySub').textContent = t('lobbySub');
     document.getElementById('lobbyHighScoreLabel').textContent = t('lobbyHighScoreLabel');
