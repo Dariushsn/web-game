@@ -1143,7 +1143,9 @@
         }
         @media (prefers-reduced-motion: reduce) {
             .scene-panel,
-            .menu-btn { animation: none; transition: none; }
+            .menu-btn,
+            .lb-spinner,
+            .lb-retry-btn { animation: none; transition: none; }
         }
 
         /* ====== UI Icons (no box/background — plain icons) ====== */
@@ -1633,6 +1635,78 @@
             text-align: center;
             padding: 8px;
             font-style: italic;
+        }
+        /* ====== Leaderboard Loading State ====== */
+        .lb-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 8px;
+            color: var(--ui-muted, rgba(232,240,255,0.68));
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .lb-spinner {
+            inline-size: 16px;
+            block-size: 16px;
+            border: 2px solid rgba(0,217,255,0.25);
+            border-top-color: var(--ui-cyan, #00d9ff);
+            border-radius: 50%;
+            animation: loader-spin 0.75s linear infinite;
+            flex-shrink: 0;
+        }
+        .mode-stat-card--custom .lb-spinner {
+            border-color: rgba(199,125,255,0.25);
+            border-top-color: var(--ui-violet, #c77dff);
+        }
+        /* ====== Leaderboard Error State ====== */
+        .lb-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+        .lb-error-icon {
+            font-size: 20px;
+            line-height: 1;
+            color: var(--ui-danger, #ff5a78);
+            filter: drop-shadow(0 0 6px rgba(255,90,120,0.45));
+        }
+        .lb-error-title {
+            color: var(--ui-ink, #f7fbff);
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .lb-error-hint {
+            color: var(--ui-muted, rgba(232,240,255,0.68));
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .lb-retry-btn {
+            margin-top: 4px;
+            padding: 7px 18px;
+            border: 1px solid rgba(255,90,120,0.55);
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(255,90,120,0.16), rgba(255,255,255,0.04));
+            color: var(--ui-danger, #ff5a78);
+            font: 800 12px/1.2 inherit;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .lb-retry-btn:hover {
+            border-color: var(--ui-danger, #ff5a78);
+            background: linear-gradient(135deg, rgba(255,90,120,0.26), rgba(255,90,120,0.08));
+            box-shadow: 0 8px 18px rgba(255,90,120,0.18);
+            transform: translateY(-1px);
+        }
+        .lb-retry-btn:active { transform: translateY(0) scale(0.98); }
+        .lb-retry-btn:focus-visible {
+            outline: 3px solid rgba(255,90,120,0.7);
+            outline-offset: 3px;
         }
         #leaderboardScreen { overflow: hidden; }
         #leaderboardScreen .scene-panel { max-block-size: calc(100dvh - 24px); }
@@ -2181,15 +2255,31 @@ async function fetchLeaderboard(mode, limit = 10) {
     try {
         const url = `${API_BASE}/top?mode=${mode}&limit=${limit}`;
         const response = await fetch(url);
-        const data = await response.json();
-        return data.ok ? data.top : [];
+
+        if (!response.ok) {
+            return { ok: false, error: 'http' };
+        }
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseErr) {
+            console.error('Leaderboard parse error:', parseErr);
+            return { ok: false, error: 'parse' };
+        }
+
+        if (!data || data.ok !== true || !Array.isArray(data.top)) {
+            return { ok: false, error: 'invalid' };
+        }
+
+        return { ok: true, entries: data.top };
     } catch (err) {
         console.error('Fetch LB error:', err);
-        return [];
+        return { ok: false, error: 'network' };
     }
 }
 
-function renderLeaderboard(containerId, entries) {
+function renderLeaderboard(containerId, result, mode = 'classic') {
     const container = document.getElementById(containerId);
     if (!container) return;
 
@@ -2197,7 +2287,20 @@ function renderLeaderboard(containerId, entries) {
     // so rank/score remain visually stable in both Persian and English.
     container.dir = currentLang === 'fa' ? 'rtl' : 'ltr';
 
-    if (!entries || entries.length === 0) {
+    if (!result || result.ok !== true) {
+        container.innerHTML = `
+            <div class="lb-error" role="alert">
+                <span class="lb-error-icon" aria-hidden="true">⚠</span>
+                <div class="lb-error-title">${t('leaderboardError')}</div>
+                <div class="lb-error-hint">${t('leaderboardErrorHint')}</div>
+                <button type="button" class="lb-retry-btn" data-mode="${mode}" data-container="${containerId}">${t('leaderboardRetry')}</button>
+            </div>`;
+        return;
+    }
+
+    const entries = result.entries || [];
+
+    if (entries.length === 0) {
         container.innerHTML = `<div class="lb-empty">${t('leaderboardEmpty')}</div>`;
         return;
     }
@@ -2229,6 +2332,23 @@ function renderLeaderboard(containerId, entries) {
     container.innerHTML = header + rows;
 }
 
+function loadLeaderboard(mode, containerId) {
+    renderLeaderboardLoading(containerId);
+    fetchLeaderboard(mode, 10).then((result) => {
+        renderLeaderboard(containerId, result, mode);
+    });
+}
+
+function renderLeaderboardLoading(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.dir = currentLang === 'fa' ? 'rtl' : 'ltr';
+    container.innerHTML =
+        `<div class="lb-loading" role="status" aria-live="polite">` +
+        `<span class="lb-spinner" aria-hidden="true"></span>` +
+        `<span>${t('leaderboardLoading')}</span>` +
+        `</div>`;
+}
 
 // ====== Username Logic (Lobby) ======
 const lobbyUsernameInput = document.getElementById('lobbyUsernameInput');
@@ -2964,7 +3084,7 @@ const LANG = {
         firstNameTitle: 'نام بازیکن خود را انتخاب کنید', firstNameDescription: 'این نام در لیدربورد نمایش داده می‌شود.',
         firstNamePlaceholder: 'نام بازیکن', firstNameSave: 'ثبت نام', firstNameSkip: 'رد کردن',
         firstNameErrorEmpty: 'لطفاً یک نام وارد کنید.', firstNameErrorNetwork: 'ثبت نام انجام نشد. دوباره تلاش کنید.',
-        leaderboardTitle: 'لیدربورد', leaderboardModeLabel: 'حالت کلاسیک', leaderboardRank: 'رتبه', leaderboardPlayer: 'بازیکن', leaderboardScore: 'امتیاز', leaderboardEmpty: 'هنوز امتیازی ثبت نشده', leaderboardLoading: 'در حال دریافت رتبه‌ها...', leaderboardError: 'دریافت لیدربورد انجام نشد.', btnBackLeaderboard: 'بازگشت',
+        leaderboardTitle: 'لیدربورد', leaderboardModeLabel: 'حالت کلاسیک', leaderboardRank: 'رتبه', leaderboardPlayer: 'بازیکن', leaderboardScore: 'امتیاز', leaderboardEmpty: 'هنوز امتیازی ثبت نشده', leaderboardLoading: 'در حال دریافت رتبه‌ها...', leaderboardError: 'دریافت لیدربورد انجام نشد.', leaderboardErrorHint: 'اتصال اینترنت یا سرور را بررسی کنید.', leaderboardRetry: 'تلاش مجدد', btnBackLeaderboard: 'بازگشت',
         qualityAuto: 'خودکار', qualityMedium: 'متوسط', qualityLow: 'پایین',
     },
     en: {
@@ -2987,7 +3107,7 @@ const LANG = {
         firstNameTitle: 'Choose your player name', firstNameDescription: 'This name appears on the leaderboard.',
         firstNamePlaceholder: 'Player name', firstNameSave: 'Save', firstNameSkip: 'Skip',
         firstNameErrorEmpty: 'Enter a player name.', firstNameErrorNetwork: 'Could not save your name. Try again.',
-        leaderboardTitle: 'Leaderboard', leaderboardModeLabel: 'Classic Mode', leaderboardRank: 'Rank', leaderboardPlayer: 'Player', leaderboardScore: 'Score', leaderboardEmpty: 'No scores yet', leaderboardLoading: 'Loading leaderboard...', leaderboardError: 'Could not load leaderboard.', btnBackLeaderboard: 'Back',
+        leaderboardTitle: 'Leaderboard', leaderboardModeLabel: 'Classic Mode', leaderboardRank: 'Rank', leaderboardPlayer: 'Player', leaderboardScore: 'Score', leaderboardEmpty: 'No scores yet', leaderboardLoading: 'Loading leaderboard...', leaderboardError: 'Could not load leaderboard.', leaderboardErrorHint: 'Check your connection or server.', leaderboardRetry: 'Retry', btnBackLeaderboard: 'Back',
         qualityAuto: 'Auto', qualityMedium: 'Medium', qualityLow: 'Low',
     }
 };
@@ -3110,10 +3230,18 @@ btnRestart.addEventListener('click', () => {
 btnResume.addEventListener('click', togglePause);
 btnLobbyPause.addEventListener('click', backToLobby);
 btnLobbyOver.addEventListener('click', backToLobby);
-btnLeaderboardLobby.addEventListener('click', async () => {
+btnLeaderboardLobby.addEventListener('click', () => {
     showScene('LEADERBOARD');
-    const classicEntries = await fetchLeaderboard('classic', 10);
-    renderLeaderboard('lbClassicMain', classicEntries);
+    loadLeaderboard('classic', 'lbClassicMain');
+});
+// Retry button is rendered dynamically inside the leaderboard error state,
+// so its click is handled via delegation instead of a per-render listener.
+document.addEventListener('click', (event) => {
+    const retryBtn = event.target.closest('.lb-retry-btn');
+    if (!retryBtn) return;
+    const mode = retryBtn.dataset.mode || 'classic';
+    const containerId = retryBtn.dataset.container || 'lbClassicMain';
+    loadLeaderboard(mode, containerId);
 });
 btnBackLeaderboard.addEventListener('click', () => showScene('LOBBY'));
 btnSettingsLobby.addEventListener('click', () => { previousScene = scene; showScene('SETTINGS'); });
