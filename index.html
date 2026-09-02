@@ -1,5 +1,5 @@
 <!--v1.8
-    SHOW_LOBBY_ICONS + Centered Username + LB UI Update + Bilingual LB + Toast Notifications-->
+    images=(audio.png,back.png,bang.png,brain.png,check.png,close.png,copy.png,cup1.png,cup2.png,cup3.png,cup4.png,cup5.png,custom.png,danger.png,dashboard.png,diamond.png,edit-pencil.png,eye.png,file_names.txt,filter.png,first-place-ribbon.png,gamepad.png,hammer.png,hide.png,high-indicator-filte.png,home.png,language.png,leaderboard.png,link.png,lobby.png,low-indicator-filter.png,moon-and-stars.png,no-credit.png,notification.png,open-doo.png,page.png,party-popper.png,pause.png,play.png,recycling.png,reset.png,settings.png,sparkling.png,star-filled.png,star.png,starr.png,stats.png,sun.png,target.png,task.png,technical.png,trash.png,trophy.png,undo.png,username.png,verified.png,warning.png,)-->
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
@@ -417,6 +417,7 @@
             transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease, background 0.24s ease;
         }
         .mode-card--custom { --accent: #c77dff; --accent-rgb: 199,125,255; }
+        .mode-card--hard { --accent: #ff5a78; --accent-rgb: 255,90,120; }
         .mode-card::before {
             content: "";
             position: absolute;
@@ -523,7 +524,7 @@
             margin: 0;
             overflow: hidden;
             border-radius: 20px;
-            background: linear-gradient(145deg, rgba(7,11,30,0.98), rgba(20,17,48,0.96));
+            background: transparent;
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -591,8 +592,16 @@
         #modeSelect .setting-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px; white-space: nowrap; }
         #modeSelect .setting-row input[type="checkbox"] { accent-color: #2ed573; width: 18px; height: 18px; cursor: pointer; }
         #modeSelect .setting-row input[type="radio"] { accent-color: #c77dff; width: 16px; height: 16px; cursor: pointer; }
-        #modeSelect .btn-start-custom { width: 100%; margin-top: 8px; border-color: #2ed573; background: rgba(46,213,115,0.08); }
-        #modeSelect .btn-start-custom:hover { box-shadow: 0 10px 24px rgba(46,213,115,0.22); }
+        #modeSelect .btn-start-custom {
+            --button: var(--ui-violet, #c77dff);
+            --button-rgb: 199,125,255;
+            width: 100%;
+            margin-top: 8px;
+            border-color: var(--ui-violet, #c77dff);
+            background: rgba(199,125,255,0.1);
+            color: var(--ui-violet, #c77dff);
+        }
+        #modeSelect .btn-start-custom:hover { box-shadow: 0 10px 24px rgba(199,125,255,0.24); }
         #modeSelect #btnBackLobby { min-width: 168px; margin-top: 14px; background: rgba(255,255,255,0.03); }
 
         @keyframes mode-select-enter {
@@ -1113,7 +1122,8 @@
             text-shadow: none;
         }
         #classicStats,
-        #customStats { direction: ltr; unicode-bidi: plaintext; }
+        #customStats,
+        #hardStats { direction: ltr; unicode-bidi: plaintext; }
         [dir="rtl"] .mode-card__arrow { transform: scaleX(-1); }
         [dir="rtl"] .mode-card:hover .mode-card__arrow,
         [dir="rtl"] .mode-card--custom[aria-expanded="true"] .mode-card__arrow { transform: translateX(-4px) scaleX(-1); }
@@ -1478,6 +1488,14 @@
             padding: 5px 2px;
             text-align: center;
             font-weight: 800;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        #modeSelect .setting-row .stepper input[type="number"]::-webkit-inner-spin-button,
+        #modeSelect .setting-row .stepper input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 0;
         }
 
         /* ====== Name Input Modal ====== */
@@ -1786,7 +1804,7 @@
                 </div>
 
                 <div class="menu-stack">
-                    <button class="menu-btn btn-play" id="btnPlay"><span class="icn icn-play"><img src="images/ui/play.png" alt=""></span> <span id="btnPlayLabel">شروع بازی</span></button>
+                    <button class="menu-btn btn-play" id="btnPlay"><span class="icn icn-play"><img src="images/ui/playlobby.png" alt=""></span> <span id="btnPlayLabel">شروع بازی</span></button>
                     <button class="menu-btn btn-stats" id="btnStats"><span class="icn icn-stats"><img src="images/ui/stats.png" alt=""></span> <span id="btnStatsLabel">آمار</span></button>
                     <button class="menu-btn btn-settings" id="btnSettingsLobby"><span class="icn icn-settings"><img src="images/ui/settings.png" alt=""></span> <span id="btnSettingsLabel">تنظیمات</span></button>
                     <div class="highscore-box">
@@ -1801,7 +1819,7 @@
                         <img src="images/ui/leaderboard.png" alt="Leaderboard">
                     </button>
                     <button class="lb-btn-square" id="btnAccountLobby" title="Account">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00d9ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <img src="images/ui/account.png" alt="Account">
                     </button>
                 </div>
             </section>
@@ -1822,6 +1840,15 @@
                                 <span class="mode-card__title" id="modeClassicTitle">کلاسیک</span>
                                 <span class="mode-card__description" id="modeClassicDesc">همان بازی معمولی با افزایش تدریجی سرعت</span>
                                 <span class="mode-stats" id="classicStats"></span>
+                            </span>
+                            <span class="mode-card__arrow" aria-hidden="true">→</span>
+                        </button>
+                        <button class="mode-card mode-card--hard" id="modeHard" type="button">
+                            <span class="mode-card__icon" aria-hidden="true"><img src="images/ui/danger.png" class="mode-icon-img" alt=""></span>
+                            <span class="mode-card__body">
+                                <span class="mode-card__title" id="modeHardTitle">سخت</span>
+                                <span class="mode-card__description" id="modeHardDesc">کنترل ساده و سوخت اجباری، با افزایش شدید سرعت</span>
+                                <span class="mode-stats" id="hardStats"></span>
                             </span>
                             <span class="mode-card__arrow" aria-hidden="true">→</span>
                         </button>
@@ -2049,7 +2076,7 @@
         <!-- First-visit name selection; the lobby remains visible behind this overlay. -->
         <div id="firstNameModal" class="overlay" aria-hidden="true">
             <section class="first-name-card" role="dialog" aria-modal="true" aria-labelledby="firstNameTitle" aria-describedby="firstNameDescription">
-                <div class="first-name-mark"><img src="images/ui/username.png" alt=""></div>
+                <div class="first-name-mark"><img src="images/ui/account.png" alt=""></div>
                 <h2 id="firstNameTitle">Choose your player name</h2>
                 <p id="firstNameDescription">This name appears on the leaderboard.</p>
                 <input id="firstNameInput" type="text" maxlength="15" autocomplete="off" spellcheck="false" placeholder="Player name">
@@ -2065,7 +2092,7 @@
         <div id="accountModal" class="overlay" aria-hidden="true">
             <section class="first-name-card account-card" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
                 <button class="account-close" id="accountCloseBtn" type="button" aria-label="close">×</button>
-                <div class="first-name-mark"><img src="images/ui/username.png" alt=""></div>
+                <div class="first-name-mark"><img src="images/ui/account.png" alt=""></div>
                 <h2 id="accountTitle">حساب کاربری</h2>
 
                 <!-- Sign in / Sign up tabs (shown when logged OUT) -->
@@ -2191,8 +2218,10 @@ const btnBackStats = document.getElementById('btnBackStats');
 const btnStartCustom = document.getElementById('btnStartCustom');
 const btnLeaderboardLobby = document.getElementById('btnLeaderboardLobby');
 const btnBackLeaderboard = document.getElementById('btnBackLeaderboard');
+const modeListEl = document.querySelector('.mode-list');
 const modeClassic = document.getElementById('modeClassic');
 const modeCustom = document.getElementById('modeCustom');
+const modeHard = document.getElementById('modeHard');
 const customSettings = document.getElementById('customSettings');
 const modeSelectMain = document.querySelector('.mode-select-main');
 const customMaxSpeed = document.getElementById('customMaxSpeed');
@@ -2691,19 +2720,27 @@ lobbyUsernameInput.addEventListener('click', () => {
 });
 
 // ====== Stats (Server-side, fallback to local) ======
+// نکته: حالت «سخت» فعلاً فقط محلی (localStorage) ذخیره می‌شود، چون بک‌اند و لیدربورد آن هنوز اضافه نشده.
 function getLocalStatsFallback() {
     try {
         const raw = localStorage.getItem('twoCars_stats_v4');
-        if (raw) return JSON.parse(raw);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (!parsed.hard) parsed.hard = { games: 0, highScore: 0 };
+            return parsed;
+        }
     } catch(e) {}
     return {
         classic: { games: 0, highScore: 0 },
         custom: { games: 0, highScore: 0 },
+        hard: { games: 0, highScore: 0 },
         cups: { cup1: 0, cup2: 0, cup3: 0, cup4: 0, cup5: 0 }
     };
 }
 
 function getCurrentStats() {
+    // حالت سخت هنوز روی سرور نیست، همیشه از localStorage خونده می‌شه
+    const localHard = getLocalStatsFallback().hard || { games: 0, highScore: 0 };
     // اگه playerData موجوده، از سرور استفاده کن
     if (playerData) {
         return {
@@ -2715,6 +2752,7 @@ function getCurrentStats() {
                 games: playerData.games_custom,
                 highScore: playerData.high_score_custom,
             },
+            hard: localHard,
             cups: playerData.cups,
             total_score: playerData.total_score,
         };
@@ -2724,6 +2762,7 @@ function getCurrentStats() {
     return {
         classic: local.classic,
         custom: local.custom,
+        hard: localHard,
         cups: local.cups,
         total_score: (local.classic.highScore || 0) + (local.custom.highScore || 0),
     };
@@ -2736,13 +2775,17 @@ async function updateStatsDisplay() {
     statGamesCu.textContent = stats.custom.games;
     statHighCu.textContent = stats.custom.highScore;
 
-    const lastModeHigh = lastPlayedMode === 'classic' ? stats.classic.highScore : stats.custom.highScore;
+    const lastModeHigh = lastPlayedMode === 'classic' ? stats.classic.highScore
+        : lastPlayedMode === 'hard' ? stats.hard.highScore
+        : stats.custom.highScore;
     lobbyHighScoreEl.textContent = lastModeHigh;
 
     const modeLabelEl = document.getElementById('lobbyModeLabel');
     if (modeLabelEl) {
         modeLabelEl.textContent = lastPlayedMode === 'classic'
             ? (currentLang === 'fa' ? 'کلاسیک' : 'Classic')
+            : lastPlayedMode === 'hard'
+            ? (currentLang === 'fa' ? 'سخت' : 'Hard')
             : (currentLang === 'fa' ? 'سفارشی' : 'Custom');
     }
 
@@ -2763,11 +2806,17 @@ async function updateStatsDisplay() {
     document.getElementById('cupsCount').textContent = `${cupsUnlocked} / 5`;
 
     document.getElementById('classicStats').innerHTML =
-        `<span class="stat-group">${stats.classic.games}</span>` +
+        `<span class="stat-group"><img src="images/ui/gamepad.png" class="stat-icon" alt=""> ${stats.classic.games}</span>` +
         `<span class="stat-group"><img src="images/ui/trophy.png" class="stat-icon" alt=""> ${stats.classic.highScore}</span>`;
     document.getElementById('customStats').innerHTML =
-        `<span class="stat-group">${stats.custom.games}</span>` +
+        `<span class="stat-group"><img src="images/ui/gamepad.png" class="stat-icon" alt=""> ${stats.custom.games}</span>` +
         `<span class="stat-group"><img src="images/ui/trophy.png" class="stat-icon" alt=""> ${stats.custom.highScore}</span>`;
+    const hardStatsEl = document.getElementById('hardStats');
+    if (hardStatsEl) {
+        hardStatsEl.innerHTML =
+            `<span class="stat-group"><img src="images/ui/gamepad.png" class="stat-icon" alt=""> ${stats.hard.games}</span>` +
+            `<span class="stat-group"><img src="images/ui/trophy.png" class="stat-icon" alt=""> ${stats.hard.highScore}</span>`;
+    }
 }
 
 // ====== Canvas & Game Setup ======
@@ -2803,8 +2852,10 @@ function resize() {
 window.addEventListener('resize', resize);
 
 const carW = 42, carH = 72;
-const BASE_SPEED = 8;
-const MAX_SPEED_CLASSIC = 14;
+const BASE_SPEED = 9;
+const MAX_SPEED_CLASSIC = 16;
+const HARD_MAX_SPEED = 18;
+const HARD_TIME_TO_MAX_SEC = 90;
 const MAX_FUEL = 100;
 const FUEL_DRAIN_PER_SEC = 3;
 const FUEL_WARNING = 25;
@@ -2820,7 +2871,42 @@ let fuel = MAX_FUEL, gameMode = 'classic';
 let customMaxSpeedVal = 7, customTimeToMaxVal = 1.5;
 let controlMode = 'classic', fuelMandatory = false;
 let fuelEmpty = false, gameOverTriggered = false;
-let lastPlayedMode = 'classic';
+const LAST_MODE_STORAGE_KEY = 'twoCars_lastPlayedMode_v1';
+const MODE_ORDER_STORAGE_KEY = 'twoCars_modeOrder_v1';
+const DEFAULT_MODE_ORDER = ['classic', 'hard', 'custom'];
+function loadLastPlayedMode() {
+    try {
+        const saved = localStorage.getItem(LAST_MODE_STORAGE_KEY);
+        if (saved === 'classic' || saved === 'custom' || saved === 'hard') return saved;
+    } catch (e) {}
+    return 'classic';
+}
+function saveLastPlayedMode(mode) {
+    try { localStorage.setItem(LAST_MODE_STORAGE_KEY, mode); } catch (e) {}
+}
+// ترتیب کامل «تازه‌بازی‌شده‌ها» (نه فقط آخرین مود): هر بار که یک مود بازی می‌شود
+// به ابتدای این آرایه منتقل می‌شود، طوری که مود دوم که همین الان بازی شده، جای دومِ
+// لیست را می‌گیرد (نه اینکه در ترتیب پیش‌فرض ثابت بماند). مثال درخواستی کاربر:
+// بازی Custom سپس Hard => ترتیب باید Hard, Custom, Classic شود.
+function loadModeOrder() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(MODE_ORDER_STORAGE_KEY) || 'null');
+        if (Array.isArray(saved) && saved.length === DEFAULT_MODE_ORDER.length &&
+            DEFAULT_MODE_ORDER.every((m) => saved.includes(m))) {
+            return saved;
+        }
+    } catch (e) {}
+    return DEFAULT_MODE_ORDER.slice();
+}
+function saveModeOrder() {
+    try { localStorage.setItem(MODE_ORDER_STORAGE_KEY, JSON.stringify(modeOrder)); } catch (e) {}
+}
+function bumpModeOrder(mode) {
+    modeOrder = [mode, ...modeOrder.filter((m) => m !== mode)];
+    saveModeOrder();
+}
+let lastPlayedMode = loadLastPlayedMode();
+let modeOrder = loadModeOrder();
 let animTime = 0, roadOffset = 0, fuelSpawnAcc = 0, trailAcc = 0;
 let qualityMode = 'auto', quality = 'medium';
 let fpsHistory = [];
@@ -2852,6 +2938,11 @@ function trailIntervalForQuality() {
     return 0.2;
 }
 function getLaneCenter(l) { return l * laneWidth + laneWidth / 2; }
+function currentModeTopSpeed() {
+    if (gameMode === 'hard') return HARD_MAX_SPEED;
+    if (gameMode === 'custom') return customMaxSpeedVal;
+    return MAX_SPEED_CLASSIC;
+}
 
 function initGame() {
     resize();
@@ -2873,7 +2964,7 @@ function initGame() {
     scoreEl.textContent = '0';
     fuelFill.style.width = '100%';
     fuelWarning.style.display = 'none';
-    fuelBar.style.display = (fuelMandatory && gameMode === 'custom') ? 'block' : 'none';
+    fuelBar.style.display = (fuelMandatory && (gameMode === 'custom' || gameMode === 'hard')) ? 'block' : 'none';
 }
 function getElapsed() {
     if (scene !== 'PLAYING') return 0;
@@ -2897,9 +2988,20 @@ function spawnWave() {
     }
 }
 function spawnFuel() {
-    if (Math.random() > 0.035) return;
+    // سختی اسپان سوخت متناسب با پیشرفت سرعت در حالت فعلی (سفارشی یا سخت) افزایش پیدا می‌کند:
+    // هرچه به سرعت نهایی نزدیک‌تر می‌شویم، احتمال ظاهر شدن سوخت کمتر می‌شود.
+    const speedRange = Math.max(currentModeTopSpeed() - BASE_SPEED, 0.001);
+    const speedProgress = Math.min(Math.max((speed - BASE_SPEED) / speedRange, 0), 1);
+    const baseChance = 0.032;
+    const minChance = 0.014;
+    const chance = baseChance - (baseChance - minChance) * speedProgress;
+    if (Math.random() > chance) return;
+
     const lane = Math.floor(Math.random() * 4);
-    for (let o of obstacles) if (o.lane === lane && o.y > -80 && o.y < 180) return;
+    // پنجره‌ی امن قبلاً خیلی بزرگ بود و سوخت تقریباً همیشه بدون ریسک قابل جمع‌آوری بود.
+    // این پنجره کوچک شده تا سوخت گاهی نزدیک موج موانع ظاهر شود و بازیکن مجبور به تصمیم پرریسک شود.
+    for (let o of obstacles) if (o.lane === lane && o.y > -50 && o.y < 30) return;
+
     fuels.push({ x: getLaneCenter(lane), y: -30, lane, r: 14, rot: 0, phase: Math.random() * Math.PI * 2 });
 }
 
@@ -2911,6 +3013,10 @@ function update(dt) {
         const totalTime = 120;
         target = BASE_SPEED + (elapsed / totalTime) * (MAX_SPEED_CLASSIC - BASE_SPEED);
         if (target > MAX_SPEED_CLASSIC) target = MAX_SPEED_CLASSIC;
+    } else if (gameMode === 'hard') {
+        const totalTime = HARD_TIME_TO_MAX_SEC;
+        target = BASE_SPEED + (elapsed / totalTime) * (HARD_MAX_SPEED - BASE_SPEED);
+        if (target > HARD_MAX_SPEED) target = HARD_MAX_SPEED;
     } else {
         const totalTime = customTimeToMaxVal * 60;
         if (totalTime > 0) {
@@ -2924,7 +3030,9 @@ function update(dt) {
     score = Math.floor(timeScore) + fuelScore;
     scoreEl.textContent = score;
     if (fuelMandatory) {
-        fuel -= FUEL_DRAIN_PER_SEC * dt;
+        // مصرف سوخت با افزایش سرعت بیشتر می‌شود؛ در سرعت پایه مصرف پایه و در سرعت بالا تا ۴۰٪ بیشتر.
+        const drainFactor = 1 + Math.min(Math.max((speed - BASE_SPEED) / Math.max(currentModeTopSpeed() - BASE_SPEED, 0.001), 0), 1) * 0.4;
+        fuel -= FUEL_DRAIN_PER_SEC * drainFactor * dt;
         if (fuel < 0) fuel = 0;
         fuelFill.style.width = (fuel / MAX_FUEL * 100) + '%';
         fuelWarning.style.display = fuel <= FUEL_WARNING ? 'block' : 'none';
@@ -2965,7 +3073,7 @@ function update(dt) {
         const car = f.lane < 2 ? leftCar : rightCar;
         if (car && fuelCollide(car, f)) {
             fuelScore += 5;
-            if (fuelMandatory) { fuel = Math.min(MAX_FUEL, fuel + 20); fuelFill.style.width = (fuel/MAX_FUEL*100)+'%'; }
+            if (fuelMandatory) { fuel = Math.min(MAX_FUEL, fuel + 16); fuelFill.style.width = (fuel/MAX_FUEL*100)+'%'; }
             createParticles(f.x, f.y, '#ffd700', 10);
             fuels[i] = fuels[fuels.length-1]; fuels.pop();
         }
@@ -3238,19 +3346,25 @@ function showScene(name) {
     const showScore = (name === 'PLAYING');
     scoreEl.style.display = showScore ? 'block' : 'none';
     if (name !== 'PLAYING') { fuelBar.style.display = 'none'; fuelWarning.style.display = 'none'; }
-    else if (fuelMandatory && gameMode === 'custom') fuelBar.style.display = 'block';
+    else if (fuelMandatory && (gameMode === 'custom' || gameMode === 'hard')) fuelBar.style.display = 'block';
     else fuelBar.style.display = 'none';
 }
 
 function startGame(mode) {
     gameMode = mode;
     lastPlayedMode = mode;
+    saveLastPlayedMode(mode);
+    bumpModeOrder(mode);
     if (mode === 'custom') {
         customMaxSpeedVal = parseFloat(customMaxSpeed.value) || 7;
         customTimeToMaxVal = parseFloat(customTimeToMax.value) || 1.5;
         const activeSeg = segmentedControls.querySelector('button.active');
         controlMode = activeSeg ? activeSeg.dataset.value : 'classic';
         fuelMandatory = customFuelToggle.classList.contains('on');
+    } else if (mode === 'hard') {
+        // پیش‌فرض ثابت حالت سخت: کنترل ساده + سوخت اجباری + شیب سرعت تندتر از کلاسیک
+        controlMode = 'simple';
+        fuelMandatory = true;
     } else {
         controlMode = 'classic';
         fuelMandatory = false;
@@ -3270,6 +3384,20 @@ async function triggerGameOver(reason) {
     const finalScore = score;
     const finalMode = gameMode;
     const sessionStart = currentSessionStart;
+
+    // حالت «سخت» هنوز روی سرور/لیدربورد پشتیبانی نمی‌شود؛ فعلاً فقط محلی ذخیره می‌شود.
+    if (finalMode === 'hard') {
+        const localStats = getLocalStatsFallback();
+        if (!localStats.hard) localStats.hard = { games: 0, highScore: 0 };
+        localStats.hard.games += 1;
+        const isNewHigh = finalScore > (localStats.hard.highScore || 0);
+        if (isNewHigh) localStats.hard.highScore = finalScore;
+        try { localStorage.setItem('twoCars_stats_v4', JSON.stringify(localStats)); } catch (e) {}
+        showGameOverScreen(finalScore, finalMode, isNewHigh, []);
+        updateStatsDisplay();
+        checkUsernameChangeAvailability();
+        return;
+    }
 
     // 1. نمایش سریع Game Over (بدون انتظار شبکه)
     showGameOverScreen(finalScore, finalMode, false, []);
@@ -3308,6 +3436,8 @@ function showGameOverScreen(finalScore, finalMode, isNew, newCups) {
     const stats = getCurrentStats();
     finalHighScoreEl.textContent = finalMode === 'classic'
         ? stats.classic.highScore
+        : finalMode === 'hard'
+        ? stats.hard.highScore
         : stats.custom.highScore;
     newRecordEl.style.display = isNew ? 'block' : 'none';
 
@@ -3342,6 +3472,7 @@ const LANG = {
         modeTitle: 'انتخاب حالت',
         modeClassicTitle: 'کلاسیک', modeClassicDesc: 'همان بازی معمولی با افزایش تدریجی سرعت',
         modeCustomTitle: 'سفارشی', modeCustomDesc: 'تنظیم سرعت، کنترل و سوخت',
+        modeHardTitle: 'سخت', modeHardDesc: 'کنترل ساده و سوخت اجباری، با افزایش شدید سرعت',
         customSpeedLabel: 'سرعت نهایی', customTimeLabel: 'زمان رسیدن (دقیقه)',
         customControlLabel: 'کنترل', ctrlClassicLabel: 'کلاسیک', ctrlSimpleLabel: 'ساده',
         customFuelLabel: 'سوخت اجباری', btnStartCustom: 'شروع سفارشی', btnBack: 'بازگشت',
@@ -3369,6 +3500,7 @@ const LANG = {
         modeTitle: 'Select Mode',
         modeClassicTitle: 'Classic', modeClassicDesc: 'Standard mode with gradual speed increase',
         modeCustomTitle: 'Custom', modeCustomDesc: 'Speed, controls & fuel settings',
+        modeHardTitle: 'Hard', modeHardDesc: 'Simple controls, mandatory fuel, brutal speed ramp',
         customSpeedLabel: 'Max Speed', customTimeLabel: 'Time to reach (min)',
         customControlLabel: 'Controls', ctrlClassicLabel: 'Classic', ctrlSimpleLabel: 'Simple',
         customFuelLabel: 'Mandatory Fuel', btnStartCustom: 'Start Custom', btnBack: 'Back',
@@ -3460,6 +3592,8 @@ function updateUI() {
     document.getElementById('modeClassicDesc').textContent = t('modeClassicDesc');
     document.getElementById('modeCustomTitle').textContent = t('modeCustomTitle');
     document.getElementById('modeCustomDesc').textContent = t('modeCustomDesc');
+    document.getElementById('modeHardTitle').textContent = t('modeHardTitle');
+    document.getElementById('modeHardDesc').textContent = t('modeHardDesc');
     document.getElementById('customSpeedLabel').textContent = t('customSpeedLabel');
     document.getElementById('customTimeLabel').textContent = t('customTimeLabel');
     document.getElementById('customControlLabel').textContent = t('customControlLabel');
@@ -3508,18 +3642,16 @@ firstNameSkipBtn.addEventListener('click', closeFirstNameIntro);
 firstNameInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') saveFirstName();
 });
-btnPlay.addEventListener('click', () => { showScene('MODESELECT'); setCustomSettingsOpen(false); });
+btnPlay.addEventListener('click', () => { reorderModeCards(); showScene('MODESELECT'); setCustomSettingsOpen(false); });
 modeClassic.addEventListener('click', () => startGame('classic'));
 modeCustom.addEventListener('click', () => setCustomSettingsOpen(true));
+modeHard.addEventListener('click', () => startGame('hard'));
 btnCloseCustom.addEventListener('click', () => setCustomSettingsOpen(false));
 btnStartCustom.addEventListener('click', () => { setCustomSettingsOpen(false); startGame('custom'); });
 btnBackLobby.addEventListener('click', backToLobby);
 btnStats.addEventListener('click', async () => { await updateStatsDisplay(); showScene('STATS'); });
 btnBackStats.addEventListener('click', backToLobby);
-btnRestart.addEventListener('click', () => {
-    if (gameMode === 'classic') startGame('classic');
-    else startGame('custom');
-});
+btnRestart.addEventListener('click', () => startGame(gameMode));
 btnResume.addEventListener('click', togglePause);
 btnLobbyPause.addEventListener('click', backToLobby);
 btnLobbyOver.addEventListener('click', backToLobby);
@@ -3590,6 +3722,19 @@ customFuelToggle.addEventListener('click', function() {
     this.classList.toggle('on');
     this.setAttribute('aria-checked', this.classList.contains('on') ? 'true' : 'false');
 });
+// ترتیب پیش‌فرض کارت‌های انتخاب حالت (برای بازیکن‌هایی که هنوز بازی نکرده‌اند): کلاسیک، سخت، سفارشی.
+// پس از هر بازی، آن مود به بالای لیست منتقل می‌شود و ترتیب کامل «تازه‌بازی‌شده‌ها» حفظ می‌شود
+// (نه اینکه فقط آخرین مود جابه‌جا شود و بقیه در ترتیب ثابت پیش‌فرض بمانند). یعنی اگر Custom
+// سپس Hard بازی شود، ترتیب باید Hard, Custom, Classic باشد — دقیقاً بر اساس modeOrder.
+const MODE_CARD_ELS = { classic: modeClassic, hard: modeHard, custom: modeCustom };
+function reorderModeCards() {
+    if (!modeListEl) return;
+    modeOrder.forEach((key) => {
+        const card = MODE_CARD_ELS[key];
+        if (card) modeListEl.appendChild(card);
+    });
+}
+
 function setCustomSettingsOpen(isOpen) {
     customSettings.classList.toggle('active', Boolean(isOpen));
     modeCustom.setAttribute('aria-expanded', String(Boolean(isOpen)));
@@ -3599,8 +3744,28 @@ function setCustomSettingsOpen(isOpen) {
 }
 
 // Keyboard
+// نگاشت کلید فیزیکی (e.code) به یک "کلید منطقی" مستقل از زبان کیبورد.
+// e.code همیشه موقعیت فیزیکی دکمه رو برمی‌گردونه (مثلاً 'KeyA')، حتی اگر چیدمان صفحه‌کلید فارسی باشد،
+// بنابراین مشکل کار نکردن w/a/s/d با کیبورد فارسی حل می‌شود.
+// به‌عنوان پشتیبان (برای مرورگرها/دستگاه‌های بدون e.code)، حروف فارسی معادل هم پوشش داده شده‌اند.
+const PERSIAN_KEY_FALLBACK = {
+    'w': 'w', 'W': 'w', 'ص': 'w',
+    'a': 'a', 'A': 'a', 'ش': 'a',
+    's': 's', 'S': 's', 'س': 's',
+    'd': 'd', 'D': 'd', 'ی': 'd',
+    'ArrowLeft': 'ArrowLeft', 'ArrowRight': 'ArrowRight', 'Escape': 'Escape'
+};
+const CODE_TO_LOGICAL_KEY = {
+    'KeyW': 'w', 'KeyA': 'a', 'KeyS': 's', 'KeyD': 'd',
+    'ArrowLeft': 'ArrowLeft', 'ArrowRight': 'ArrowRight', 'Escape': 'Escape'
+};
+function getLogicalKey(e) {
+    if (e.code && CODE_TO_LOGICAL_KEY[e.code]) return CODE_TO_LOGICAL_KEY[e.code];
+    return PERSIAN_KEY_FALLBACK[e.key] || e.key;
+}
 window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    const key = getLogicalKey(e);
+    if (key === 'Escape') {
         if (scene === 'PLAYING') togglePause();
         else if (scene === 'PAUSED') togglePause();
         else if (scene === 'SETTINGS') {
@@ -3612,13 +3777,16 @@ window.addEventListener('keydown', (e) => {
     const left = leftCar, right = rightCar;
     if (!left || !right) return;
     if (controlMode === 'classic') {
-        if ((e.key === 'a' || e.key === 'A') && left.lane === 1) { left.lane = 0; left.targetX = getLaneCenter(0); }
-        else if ((e.key === 'd' || e.key === 'D') && left.lane === 0) { left.lane = 1; left.targetX = getLaneCenter(1); }
-        if (e.key === 'ArrowLeft' && right.lane === 3) { right.lane = 2; right.targetX = getLaneCenter(2); }
-        else if (e.key === 'ArrowRight' && right.lane === 2) { right.lane = 3; right.targetX = getLaneCenter(3); }
+        // کنترل کلاسیک: a/d (یا معادل فارسی ش/ی) برای ماشین چپ، فلش‌های چپ/راست برای ماشین راست.
+        if (key === 'a' && left.lane === 1) { left.lane = 0; left.targetX = getLaneCenter(0); }
+        else if (key === 'd' && left.lane === 0) { left.lane = 1; left.targetX = getLaneCenter(1); }
+        if (key === 'ArrowLeft' && right.lane === 3) { right.lane = 2; right.targetX = getLaneCenter(2); }
+        else if (key === 'ArrowRight' && right.lane === 2) { right.lane = 3; right.targetX = getLaneCenter(3); }
     } else {
-        if (e.key === 'ArrowLeft') { left.lane = left.lane === 0 ? 1 : 0; left.targetX = getLaneCenter(left.lane); }
-        else if (e.key === 'ArrowRight') { right.lane = right.lane === 2 ? 3 : 2; right.targetX = getLaneCenter(right.lane); }
+        // کنترل ساده: هر کدام از w/a (یا ص/ش) یا فلش چپ، ماشین چپ را جابجا می‌کند
+        // و هر کدام از s/d (یا س/ی) یا فلش راست، ماشین راست را جابجا می‌کند.
+        if (key === 'ArrowLeft' || key === 'a' || key === 'w') { left.lane = left.lane === 0 ? 1 : 0; left.targetX = getLaneCenter(left.lane); }
+        else if (key === 'ArrowRight' || key === 'd' || key === 's') { right.lane = right.lane === 2 ? 3 : 2; right.targetX = getLaneCenter(right.lane); }
     }
 });
 canvas.addEventListener('pointerdown', (e) => {
@@ -3652,6 +3820,7 @@ loadQualityPref();
 resize();
 initGame();
 updateUI();
+reorderModeCards();
 
 // Initial server-side player data load.
 (async function initApp() {
